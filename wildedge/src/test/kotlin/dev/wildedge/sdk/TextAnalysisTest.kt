@@ -46,10 +46,51 @@ class TextAnalysisTest {
         assertEquals("ar", meta.language)
     }
 
-    @Test fun mixedOrLatinOnlyReturnsNullOrEn() {
+    @Test fun detectsEnglish() {
+        val meta = WildEdge.analyzeText("the quick brown fox will have been running with them")
+        assertEquals("en", meta.language)
+    }
+
+    @Test fun detectsGermanFromEszett() {
+        val meta = WildEdge.analyzeText("Die Straße ist nicht weit von hier")
+        assertEquals("de", meta.language)
+    }
+
+    @Test fun detectsGermanFromUmlauts() {
+        val meta = WildEdge.analyzeText("Schön, aber ich möchte das auch wissen")
+        assertEquals("de", meta.language)
+    }
+
+    @Test fun detectsSpanishFromEnye() {
+        val meta = WildEdge.analyzeText("El niño no habla español en casa")
+        assertEquals("es", meta.language)
+    }
+
+    @Test fun detectsSpanishFromInvertedMarks() {
+        val meta = WildEdge.analyzeText("¿Cómo estás? ¡Muy bien, gracias!")
+        assertEquals("es", meta.language)
+    }
+
+    @Test fun detectsPortuguese() {
+        val meta = WildEdge.analyzeText("Não é possível fazer isso também agora")
+        assertEquals("pt", meta.language)
+    }
+
+    @Test fun detectsFrench() {
+        val meta = WildEdge.analyzeText("Les chats sont dans la maison avec vous")
+        assertEquals("fr", meta.language)
+    }
+
+    @Test fun ambiguousLatinReturnsNull() {
+        // No distinctive chars, no stop word matches
         val meta = WildEdge.analyzeText("hello world")
-        // Latin-only text — may return "en" or null depending on confidence threshold
-        assertTrue(meta.language == "en" || meta.language == null)
+        assertNull(meta.language)
+    }
+
+    @Test fun weakSignalBelowThresholdReturnsNull() {
+        // Single stop word match scores below the minimum threshold
+        val meta = WildEdge.analyzeText("bonjour")
+        assertNull(meta.language)
     }
 
     @Test fun promptTypeAndTurnIndexPassedThrough() {

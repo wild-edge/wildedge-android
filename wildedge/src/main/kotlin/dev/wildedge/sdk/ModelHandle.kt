@@ -7,18 +7,19 @@ class ModelHandle internal constructor(
     val info: ModelInfo,
     private val publish: (MutableMap<String, Any?>) -> Unit,
     private val hardwareSnapshot: () -> HardwareContext?,
+    private val activeSpanContext: () -> SpanContext? = { null },
 ) : AutoCloseable {
 
     private var loadedAt: Long = 0L
     var lastInferenceId: String? = null
         private set
-    var acceleratorActual: String? = null
+    var acceleratorActual: Accelerator? = null
         internal set
 
     fun trackLoad(
         durationMs: Int,
         memoryBytes: Long? = null,
-        accelerator: String? = null,
+        accelerator: Accelerator? = null,
         success: Boolean = true,
         errorCode: String? = null,
         coldStart: Boolean? = null,
@@ -95,6 +96,7 @@ class ModelHandle internal constructor(
         runId: String? = null,
         agentId: String? = null,
     ): String {
+        val activeCtx = activeSpanContext()
         val rawHw = hardware ?: hardwareSnapshot()
         val hw = acceleratorActual?.let { acc ->
             (rawHw ?: HardwareContext()).copy(acceleratorActual = acc)
@@ -110,9 +112,9 @@ class ModelHandle internal constructor(
             outputMeta = outputMeta,
             generationConfig = generationConfig,
             hardware = hw,
-            traceId = traceId,
+            traceId = traceId ?: activeCtx?.traceId,
             spanId = spanId,
-            parentSpanId = parentSpanId,
+            parentSpanId = parentSpanId ?: activeCtx?.spanId,
             runId = runId,
             agentId = agentId,
         )

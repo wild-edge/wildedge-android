@@ -4,18 +4,27 @@ kotlin = "2.3.0"
 junit = "4.13.2"
 mockwebserver = "4.12.0"
 robolectric = "4.14.1"
+appcompat = "1.7.0"
+lifecycle = "2.8.7"
+coroutines = "1.8.1"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "mockwebserver" }
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
+coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 
 # Optional compile-only integrations (not bundled)
 tflite = { group = "org.tensorflow", name = "tensorflow-lite", version = "2.14.0" }
+tflite-gpu = { group = "org.tensorflow", name = "tensorflow-lite-gpu", version = "2.14.0" }
 tflite-play-services = { group = "com.google.android.gms", name = "play-services-tflite-java", version = "16.4.0" }
 onnxruntime = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version = "1.17.3" }
 litertlm = { group = "com.google.ai.edge.litertlm", name = "litertlm-android", version = "0.10.0" }
+mlkit-face = { group = "com.google.mlkit", name = "face-detection", version = "16.1.7" }
 
 [plugins]
 android-library = { id = "com.android.library", version.ref = "agp" }
+android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

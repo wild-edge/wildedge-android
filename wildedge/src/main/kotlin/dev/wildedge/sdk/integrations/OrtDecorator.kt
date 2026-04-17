@@ -15,7 +15,7 @@ class OrtDecorator(
     modelId: String,
     modelVersion: String = "unknown",
     quantization: String? = null,
-    accelerator: String? = null,
+    accelerator: dev.wildedge.sdk.Accelerator? = null,
 ) : AutoCloseable {
 
     val handle = wildEdge.registerModel(
@@ -68,7 +68,7 @@ fun WildEdge.decorate(
     session: OrtSession,
     modelFile: File,
     modelVersion: String = "unknown",
-    accelerator: String? = null,
+    accelerator: dev.wildedge.sdk.Accelerator? = null,
 ): OrtDecorator = OrtDecorator(
     session, this,
     modelId = inferModelId(modelFile),
@@ -82,5 +82,5 @@ fun WildEdge.decorate(
     modelId: String,
     modelVersion: String = "unknown",
     quantization: String? = null,
-    accelerator: String? = null,
+    accelerator: dev.wildedge.sdk.Accelerator? = null,
 ): OrtDecorator = OrtDecorator(session, this, modelId, modelVersion, quantization, accelerator)

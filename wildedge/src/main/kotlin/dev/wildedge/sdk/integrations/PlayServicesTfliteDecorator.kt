@@ -14,7 +14,7 @@ class PlayServicesTfliteDecorator(
     modelId: String,
     modelVersion: String = "unknown",
     quantization: String? = null,
-    accelerator: String? = null,
+    accelerator: dev.wildedge.sdk.Accelerator? = null,
 ) : AutoCloseable {
 
     val handle = wildEdge.registerModel(
@@ -64,7 +64,7 @@ fun WildEdge.decorate(
     interpreter: InterpreterApi,
     modelFile: File,
     modelVersion: String = "unknown",
-    accelerator: String? = null,
+    accelerator: dev.wildedge.sdk.Accelerator? = null,
 ): PlayServicesTfliteDecorator = PlayServicesTfliteDecorator(
     interpreter, this,
     modelId = inferModelId(modelFile),
@@ -78,7 +78,7 @@ fun WildEdge.decorate(
     modelId: String,
     modelVersion: String = "unknown",
     quantization: String? = null,
-    accelerator: String? = null,
+    accelerator: dev.wildedge.sdk.Accelerator? = null,
 ): PlayServicesTfliteDecorator = PlayServicesTfliteDecorator(
     interpreter, this, modelId, modelVersion, quantization, accelerator,
 )

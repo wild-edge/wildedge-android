@@ -1,0 +1,8 @@
+# Copy this file to local.properties and fill in the values.
+# local.properties is gitignored so your DSN stays out of version control.
+
+# Path to your Android SDK. Android Studio sets this automatically.
+sdk.dir=/path/to/android/sdk
+
+# Your WildEdge project DSN. Leave blank to run the sample app in noop mode.
+wildedge.dsn=

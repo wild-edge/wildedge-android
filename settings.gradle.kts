@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "wildedge-kotlin"
 include(":wildedge")
+include(":sample")

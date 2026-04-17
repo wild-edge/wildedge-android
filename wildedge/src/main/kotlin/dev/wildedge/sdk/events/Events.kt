@@ -24,7 +24,7 @@ data class HardwareContext(
     val memoryAvailableBytes: Long? = null,
     val cpuFreqMhz: Int? = null,
     val cpuFreqMaxMhz: Int? = null,
-    val acceleratorActual: String? = null,
+    val acceleratorActual: dev.wildedge.sdk.Accelerator? = null,
     val gpuBusyPercent: Int? = null,
 ) {
     fun toMap(): Map<String, Any?> = mapOf(
@@ -38,7 +38,7 @@ data class HardwareContext(
         "memory_available_bytes" to memoryAvailableBytes,
         "cpu_freq_mhz" to cpuFreqMhz,
         "cpu_freq_max_mhz" to cpuFreqMaxMhz,
-        "accelerator_actual" to acceleratorActual,
+        "accelerator_actual" to acceleratorActual?.value,
         "gpu_busy_percent" to gpuBusyPercent,
     ).filterValues { it != null }
 }
@@ -212,7 +212,7 @@ fun buildModelLoadEvent(
     modelId: String,
     durationMs: Int,
     memoryBytes: Long? = null,
-    accelerator: String? = null,
+    accelerator: dev.wildedge.sdk.Accelerator? = null,
     success: Boolean = true,
     errorCode: String? = null,
     coldStart: Boolean? = null,
@@ -226,7 +226,7 @@ fun buildModelLoadEvent(
     "load" to mapOf(
         "duration_ms" to durationMs,
         "memory_bytes" to memoryBytes,
-        "accelerator" to accelerator,
+        "accelerator" to accelerator?.value,
         "success" to success,
         "error_code" to errorCode,
         "cold_start" to coldStart,
@@ -320,6 +320,27 @@ fun buildErrorEvent(
         "error_message" to errorMessage?.take(Config.ERROR_MSG_MAX_LEN),
         "stack_trace_hash" to stackTraceHash,
         "related_event_id" to relatedEventId,
+    ).filterValues { it != null },
+).filterValues { it != null }
+
+fun buildSpanEvent(
+    traceId: String,
+    spanId: String,
+    parentSpanId: String? = null,
+    name: String,
+    durationMs: Long,
+    attributes: Map<String, Any?>? = null,
+): Map<String, Any?> = mapOf(
+    "event_id" to newEventId(),
+    "event_type" to "span",
+    "timestamp" to isoNow(),
+    "trace_id" to traceId,
+    "span_id" to spanId,
+    "parent_span_id" to parentSpanId,
+    "span" to mapOf(
+        "name" to name,
+        "duration_ms" to durationMs,
+        "attributes" to attributes,
     ).filterValues { it != null },
 ).filterValues { it != null }
 

@@ -1,9 +1,12 @@
 package dev.wildedge.sdk
 
-object Accelerator {
-    const val CPU = "cpu"
-    const val GPU = "gpu"
-    const val NPU = "npu"
-    const val NNAPI = "nnapi"
-    const val DSP = "dsp"
+@JvmInline
+value class Accelerator(val value: String) {
+    companion object {
+        val CPU   = Accelerator("cpu")
+        val GPU   = Accelerator("gpu")
+        val NPU   = Accelerator("npu")
+        val NNAPI = Accelerator("nnapi")
+        val DSP   = Accelerator("dsp")
+    }
 }

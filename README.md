@@ -6,6 +6,23 @@ On-device ML inference monitoring for Android. Tracks latency, confidence, drift
 
 > **Pre-release:** API is unstable until v1.0.
 
+## Try it
+
+Run the sample app on a device or emulator to see the SDK in action:
+
+1. Connect a device or start an emulator
+2. Copy and fill in your config:
+   ```bash
+   cp local.properties.example local.properties
+   # set sdk.dir to your Android SDK path and add your DSN
+   ```
+3. Install and launch:
+   ```bash
+   ./gradlew :sample:installDebug
+   ```
+
+The sample downloads MobileNet V1, runs 10 inferences, and shows results in a scrolling log. Without a DSN it runs in noop mode: all tracking calls work, events are discarded locally.
+
 ## Install
 
 Add to your module's `build.gradle.kts`:
@@ -103,6 +120,33 @@ tracked.run(inputBuffer, outputBuffer)
 tracked.close()
 ```
 
+### Remote models
+
+For apps that call a remote LLM API directly, use manual tracking. The same `ModelHandle` works — set `modelFormat` to `"remote"` and `modelSource` to `"api"`:
+
+```kotlin
+val handle = wildEdge.registerModel("gpt-4o-mini", ModelInfo(
+    modelName = "GPT-4o mini",
+    modelVersion = "2024-07-18",
+    modelSource = "api",
+    modelFormat = "remote",
+))
+
+val start = System.currentTimeMillis()
+val response = callRemoteApi(prompt)
+handle.trackInference(
+    durationMs = (System.currentTimeMillis() - start).toInt(),
+    inputModality = InputModality.Text,
+    outputModality = OutputModality.Text,
+    outputMeta = GenerationOutputMeta(
+        tokensIn = response.usage.promptTokens,
+        tokensOut = response.usage.completionTokens,
+    ).toMap(),
+)
+```
+
+This gives you latency, token usage, and error rates for remote calls alongside your on-device models in the same dashboard. If you call the remote model as part of a pipeline with on-device steps, wrap everything in a `trace {}` block so the events are correlated.
+
 ### Manual tracking
 
 For any other framework:
@@ -127,6 +171,34 @@ handle.trackInference(
 
 handle.trackUnload()
 ```
+
+## Tracing
+
+Group related inferences into a trace so the server can reconstruct the full pipeline:
+
+```kotlin
+wildEdge.trace("user-query") { trace ->
+    trace.span("embed") {
+        val start = System.currentTimeMillis()
+        val embedding = embedModel.run(input)
+        embedHandle.trackInference(durationMs = (System.currentTimeMillis() - start).toInt())
+        embedding
+    }
+
+    trace.span("classify") {
+        val start = System.currentTimeMillis()
+        val label = classifyModel.run(embedding)
+        classifyHandle.trackInference(durationMs = (System.currentTimeMillis() - start).toInt())
+        label
+    }
+}
+```
+
+- `trace {}` creates a root span and emits a `span` event with the total duration when the block returns.
+- `span {}` creates a child span linked via `parent_span_id`.
+- Any `trackInference()` call inside a `trace` or `span` block automatically picks up `trace_id` and `parent_span_id` — no manual ID threading needed.
+- Explicit `traceId`/`parentSpanId` arguments on `trackInference()` take precedence over the propagated context.
+- Both `trace` and `span` return the block result, so they compose naturally with your data flow.
 
 ## Output metadata
 

@@ -30,7 +30,7 @@ class ModelHandleAcceleratorTest {
         handle.trackInference(durationMs = 10)
 
         val hw = hardwareMap(events.first { it["event_type"] == "inference" })
-        assertEquals(Accelerator.GPU, hw?.get("accelerator_actual"))
+        assertEquals(Accelerator.GPU.value, hw?.get("accelerator_actual"))
     }
 
     @Test fun acceleratorActualOverridesNullInSnapshot() {
@@ -39,7 +39,7 @@ class ModelHandleAcceleratorTest {
         handle.trackInference(durationMs = 5)
 
         val hw = hardwareMap(events.first { it["event_type"] == "inference" })
-        assertEquals(Accelerator.NNAPI, hw?.get("accelerator_actual"))
+        assertEquals(Accelerator.NNAPI.value, hw?.get("accelerator_actual"))
     }
 
     @Test fun acceleratorActualOverridesSnapshotValue() {
@@ -48,7 +48,7 @@ class ModelHandleAcceleratorTest {
         handle.trackInference(durationMs = 5)
 
         val hw = hardwareMap(events.first { it["event_type"] == "inference" })
-        assertEquals(Accelerator.GPU, hw?.get("accelerator_actual"))
+        assertEquals(Accelerator.GPU.value, hw?.get("accelerator_actual"))
     }
 
     @Test fun nullAcceleratorActualPreservesSnapshotValue() {
@@ -56,7 +56,7 @@ class ModelHandleAcceleratorTest {
         handle.trackInference(durationMs = 5)
 
         val hw = hardwareMap(events.first { it["event_type"] == "inference" })
-        assertEquals(Accelerator.GPU, hw?.get("accelerator_actual"))
+        assertEquals(Accelerator.GPU.value, hw?.get("accelerator_actual"))
     }
 
     @Test fun nullAcceleratorActualWithNullSnapshotProducesNoHardwareKey() {
@@ -73,6 +73,6 @@ class ModelHandleAcceleratorTest {
         handle.trackInference(durationMs = 1)
 
         val hw = hardwareMap(events.first { it["event_type"] == "inference" })
-        assertEquals(Accelerator.CPU, hw?.get("accelerator_actual"))
+        assertEquals(Accelerator.CPU.value, hw?.get("accelerator_actual"))
     }
 }

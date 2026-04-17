@@ -5,6 +5,7 @@ import android.os.Looper
 import android.util.Log
 import dev.wildedge.sdk.events.HardwareContext
 import dev.wildedge.sdk.events.buildMemoryWarningEvent
+import dev.wildedge.sdk.events.buildSpanEvent
 import dev.wildedge.sdk.events.isoNow
 import java.io.File
 import java.net.URI
@@ -23,6 +24,7 @@ class WildEdge internal constructor(
     private val handles = mutableMapOf<String, ModelHandle>()
     private val handlesLock = ReentrantLock()
     @Volatile private var closed = false
+    private val activeSpan = ThreadLocal<SpanContext?>()
 
     fun registerModel(modelId: String, info: ModelInfo): ModelHandle {
         if (noop || closed) return ModelHandle(modelId, info, {}, { null })
@@ -30,7 +32,7 @@ class WildEdge internal constructor(
             handles.getOrPut(modelId) {
                 registry.register(modelId, info)
                 if (debug) Log.d("wildedge", "registered model id=$modelId format=${info.modelFormat}")
-                ModelHandle(modelId, info, ::publish) { hardwareSampler?.snapshot() }
+                ModelHandle(modelId, info, ::publish, { hardwareSampler?.snapshot() }, { activeSpan.get() })
             }
         }
     }
@@ -77,6 +79,42 @@ class WildEdge internal constructor(
             Log.w("wildedge", "close() called on main thread; closing asynchronously")
         }
         c.close(timeoutMs = timeoutMs, blocking = blocking)
+    }
+
+    fun <T> trace(name: String, attributes: Map<String, Any?>? = null, block: (SpanContext) -> T): T =
+        runSpan(name = name, traceId = UUID.randomUUID().toString(), parentSpanId = null, attributes = attributes, block = block)
+
+    internal fun <T> runSpan(
+        name: String,
+        traceId: String,
+        parentSpanId: String?,
+        attributes: Map<String, Any?>?,
+        block: (SpanContext) -> T,
+    ): T {
+        val ctx = SpanContext(
+            traceId = traceId,
+            spanId = UUID.randomUUID().toString(),
+            parentSpanId = parentSpanId,
+            owner = this,
+        )
+        val prev = activeSpan.get()
+        activeSpan.set(ctx)
+        val startMs = System.currentTimeMillis()
+        try {
+            return block(ctx)
+        } finally {
+            activeSpan.set(prev)
+            val durationMs = System.currentTimeMillis() - startMs
+            if (debug) Log.d("wildedge", "span name=$name trace=${ctx.traceId} duration=${durationMs}ms")
+            publish(buildSpanEvent(
+                traceId = ctx.traceId,
+                spanId = ctx.spanId,
+                parentSpanId = ctx.parentSpanId,
+                name = name,
+                durationMs = durationMs,
+                attributes = attributes,
+            ).toMutableMap())
+        }
     }
 
     val pendingCount: Int get() = queue.length()
@@ -138,7 +176,7 @@ class WildEdge internal constructor(
                 flushIntervalMs = flushIntervalMs,
                 maxEventAgeMs = maxEventAgeMs,
                 lowConfidenceThreshold = lowConfidenceThreshold,
-                debug = debug,
+                log = { msg -> if (debug) Log.d("wildedge", msg) },
                 onDeliveryFailure = onDeliveryFailure,
             ).also { it.start() }
 

@@ -113,4 +113,59 @@ class LiteRtTrackingTest {
         val outputMeta = (inference["inference"] as Map<String, Any?>)["output_meta"] as Map<String, Any?>?
         assertEquals(17, outputMeta?.get("tokens_in"))
     }
+
+    @Test fun charBasedFallbackUsedWhenNoTokenizer() {
+        val (handle, events) = captureHandle()
+        val tracked = noop.trackWith(handle)
+
+        // 8 chars total -> 8 / 4.0 = 2 tokens
+        tracked("hell", false, null)
+        tracked("o!!!", false, null)
+        tracked("", true, null)
+
+        val inference = events.first { it["event_type"] == "inference" }
+        @Suppress("UNCHECKED_CAST")
+        val outputMeta = (inference["inference"] as Map<String, Any?>)["output_meta"] as Map<String, Any?>?
+        assertEquals(2, outputMeta?.get("tokens_out"))
+    }
+
+    @Test fun partialWordChunksCountedByCharsNotWords() {
+        val (handle, events) = captureHandle()
+        val tracked = noop.trackWith(handle)
+
+        // "Hel" + "lo" = 5 chars -> 5/4 = 1 token (not 2 words)
+        tracked("Hel", false, null)
+        tracked("lo", false, null)
+        tracked("", true, null)
+
+        val inference = events.first { it["event_type"] == "inference" }
+        @Suppress("UNCHECKED_CAST")
+        val outputMeta = (inference["inference"] as Map<String, Any?>)["output_meta"] as Map<String, Any?>?
+        assertEquals(1, outputMeta?.get("tokens_out"))
+    }
+
+    @Test fun customTokenizerResultUsedForTokensOut() {
+        val (handle, events) = captureHandle()
+        val tracked = noop.trackWith(handle, tokenizer = { 42 })
+
+        tracked("some output", false, null)
+        tracked("", true, null)
+
+        val inference = events.first { it["event_type"] == "inference" }
+        @Suppress("UNCHECKED_CAST")
+        val outputMeta = (inference["inference"] as Map<String, Any?>)["output_meta"] as Map<String, Any?>?
+        assertEquals(42, outputMeta?.get("tokens_out"))
+    }
+
+    @Test fun customTokenizerReceivesFullAssembledOutput() {
+        val (handle, _) = captureHandle()
+        var tokenizerInput: String? = null
+        val tracked = noop.trackWith(handle, tokenizer = { text -> tokenizerInput = text; 1 })
+
+        tracked("hello", false, null)
+        tracked(" world", false, null)
+        tracked("", true, null)
+
+        assertEquals("hello world", tokenizerInput)
+    }
 }

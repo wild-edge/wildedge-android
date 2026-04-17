@@ -1,6 +1,5 @@
 package dev.wildedge.sdk
 
-import android.util.Log
 import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.TimeUnit
@@ -21,7 +20,7 @@ internal class Consumer(
     private val flushIntervalMs: Long = Config.DEFAULT_FLUSH_INTERVAL_MS,
     private val maxEventAgeMs: Long = Config.DEFAULT_MAX_EVENT_AGE_MS,
     private val lowConfidenceThreshold: Float = Config.DEFAULT_LOW_CONFIDENCE_THRESHOLD,
-    private val debug: Boolean = false,
+    private val log: (String) -> Unit = {},
     private val onDeliveryFailure: ((reason: String, droppedCount: Int, queueDepth: Int) -> Unit)? = null,
 ) {
     private val executor = Executors.newSingleThreadScheduledExecutor { r ->
@@ -142,7 +141,7 @@ internal class Consumer(
                 val response = transmitter.send(json)
                 if (response.status in listOf("accepted", "partial")) {
                     pendingStore.delete(file)
-                    if (debug) Log.d("wildedge", "pending batch retransmitted ok")
+                    log("pending batch retransmitted ok")
                     true
                 } else {
                     deadLetterStore.write("permanent_${response.status}", json)
@@ -166,20 +165,20 @@ internal class Consumer(
             deadLetterStore.write("event_age_exceeded", staleJson)
             queue.removeFirstN(stale.size)
             onDeliveryFailure?.invoke("event_age_exceeded", stale.size, queue.length())
-            if (debug) Log.w("wildedge", "dropped ${stale.size} stale event(s)")
+            log("dropped ${stale.size} stale event(s)")
             return true
         }
 
         val batchJson = buildBatch(device, registry.snapshot(), events, sessionId, createdAt, lowConfidenceThreshold)
 
-        if (debug) Log.d("wildedge", "transmitting ${events.size} event(s)")
+        log("transmitting ${events.size} event(s)")
 
         return try {
             val response = transmitter.send(batchJson)
             when (response.status) {
                 "accepted", "partial" -> {
                     queue.removeFirstN(events.size)
-                    if (debug) Log.d("wildedge", "accepted=${response.eventsAccepted}")
+                    log("accepted=${response.eventsAccepted}")
                     true
                 }
                 "rejected", "unauthorized", "error" -> {
@@ -194,10 +193,10 @@ internal class Consumer(
             val spooled = pendingStore.write(batchJson)
             if (spooled) {
                 queue.removeFirstN(events.size)
-                if (debug) Log.w("wildedge", "transmit failed; moved ${events.size} event(s) to pending")
+                log("transmit failed; moved ${events.size} event(s) to pending")
                 true
             } else {
-                if (debug) Log.w("wildedge", "transmit failed; unable to persist pending batch")
+                log("transmit failed; unable to persist pending batch")
                 false
             }
         }

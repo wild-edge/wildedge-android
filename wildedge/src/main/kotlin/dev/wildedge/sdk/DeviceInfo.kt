@@ -22,7 +22,7 @@ data class DeviceInfo(
     val cpuCores: Int? = null,
     val ramTotalBytes: Long? = null,
     val gpuModel: String? = null,
-    val accelerators: List<String> = listOf("cpu"),
+    val accelerators: List<Accelerator> = listOf(Accelerator.CPU),
 ) {
     internal fun toMap(): Map<String, Any?> = mapOf(
         "device_id" to deviceId,
@@ -34,7 +34,7 @@ data class DeviceInfo(
         "locale" to locale,
         "timezone" to timezone,
         "gpu_model" to gpuModel,
-        "accelerators" to accelerators,
+        "accelerators" to accelerators.map { it.value },
     ).filterValues { it != null }
 
     companion object {

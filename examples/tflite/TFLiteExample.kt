@@ -6,7 +6,6 @@ import dev.wildedge.sdk.Accelerator
 import dev.wildedge.sdk.WildEdge
 import dev.wildedge.sdk.analysis.analyzeImage
 import dev.wildedge.sdk.integrations.decorate
-import org.tensorflow.lite.GpuDelegate
 import org.tensorflow.lite.Interpreter
 import java.io.File
 
@@ -25,9 +24,11 @@ class TFLiteExample(context: Context) {
         modelFile,
     )
 
-    // GPU delegate: pass Accelerator.GPU so inference events carry the correct hardware context
+    // Pass Accelerator.GPU when using a GPU delegate so inference events carry the correct context.
+    // Wire up your delegate of choice (GpuDelegate, NnApiDelegate, etc.) via Interpreter.Options,
+    // then pass the matching Accelerator constant here.
     private val trackedGpu = wildEdge.decorate(
-        Interpreter(modelFile, Interpreter.Options().apply { addDelegate(GpuDelegate()) }),
+        Interpreter(modelFile, Interpreter.Options().apply { numThreads = 1 }),
         modelFile,
         accelerator = Accelerator.GPU,
     )

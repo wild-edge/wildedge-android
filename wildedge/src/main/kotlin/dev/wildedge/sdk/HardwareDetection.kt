@@ -5,25 +5,43 @@ import java.io.File
 
 internal object HardwareDetection {
 
-    fun gpuModel(): String? =
-        readSysfs("/sys/class/kgsl/kgsl-3d0/gpu_model")   // Qualcomm Adreno
-            ?: readSysfs("/sys/kernel/gpu/gpu_model")       // some Samsung/MediaTek
+    // First readable file wins.
+    private val GPU_MODEL_PATHS = listOf(
+        "/sys/class/kgsl/kgsl-3d0/gpu_model",        // Qualcomm Adreno
+        "/sys/kernel/gpu/gpu_model",                   // Mali (Samsung Exynos, MediaTek Dimensity)
+        "/sys/class/misc/mali0/device/gpuinfo",        // Mali alternate
+        "/sys/class/gpu/mali0/device/gpuinfo",         // Mali alternate
+    )
 
-    fun availableAccelerators(): List<String> = buildList {
-        add("cpu")
-        if (hasGpu()) add("gpu")
-        if (hasNnapi()) add("nnapi")
-        if (hasDsp()) add("dsp")
+    // Adreno returns "42 %" and Mali returns "42". The digit filter handles both.
+    private val GPU_BUSY_PATHS = listOf(
+        "/sys/class/kgsl/kgsl-3d0/gpu_busy_percentage", // Qualcomm Adreno
+        "/sys/kernel/gpu/gpu_loading",                    // Mali (Samsung Exynos, MediaTek Dimensity)
+        "/sys/class/misc/mali0/device/utilization",       // Mali alternate
+        "/sys/class/gpu/mali0/device/utilization",        // Mali alternate
+    )
+
+    private val GPU_PRESENCE_PATHS = listOf(
+        "/sys/class/kgsl/kgsl-3d0",  // Qualcomm Adreno
+        "/sys/class/gpu/mali0",       // Mali
+        "/sys/class/misc/mali0",      // Mali alternate
+        "/sys/kernel/gpu",            // Samsung Exynos, MediaTek Dimensity
+    )
+
+    fun gpuModel(): String? = GPU_MODEL_PATHS.firstNotNullOfOrNull { readSysfs(it) }
+
+    fun availableAccelerators(): List<Accelerator> = buildList {
+        add(Accelerator.CPU)
+        if (hasGpu()) add(Accelerator.GPU)
+        if (hasNnapi()) add(Accelerator.NNAPI)
+        if (hasDsp()) add(Accelerator.DSP)
     }
 
-    fun readGpuBusyPercent(): Int? {
-        val raw = readSysfs("/sys/class/kgsl/kgsl-3d0/gpu_busy_percentage") ?: return null
-        return raw.filter { it.isDigit() }.toIntOrNull()
+    fun readGpuBusyPercent(): Int? = GPU_BUSY_PATHS.firstNotNullOfOrNull { path ->
+        readSysfs(path)?.filter { it.isDigit() }?.toIntOrNull()
     }
 
-    private fun hasGpu(): Boolean =
-        File("/sys/class/kgsl/kgsl-3d0").exists() ||
-        File("/sys/class/gpu/mali0").exists()
+    private fun hasGpu(): Boolean = GPU_PRESENCE_PATHS.any { File(it).exists() }
 
     private fun hasNnapi(): Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
 
@@ -37,7 +55,7 @@ internal object HardwareDetection {
                hw.contains("msm") || hw.contains("snapdragon")
     }
 
-    // Internal for testability — test code in the same module can call this directly.
+    // Internal for testability: test code in the same module can call this directly.
     internal fun readSysfs(path: String): String? = try {
         File(path).readText().trim().takeIf { it.isNotEmpty() }
     } catch (_: Exception) { null }
