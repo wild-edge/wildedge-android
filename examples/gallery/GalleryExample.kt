@@ -19,7 +19,6 @@ class GalleryExample(context: Context) {
 
     private val wildEdge: WildEdgeClient = WildEdge.init(context) {
         dsn = System.getenv("WILDEDGE_DSN") ?: ""
-        appVersion = "1.0.0"
     }
 
     private val config = EngineConfig(modelPath = "/path/to/gemma-3n_int4.bin")

@@ -14,12 +14,10 @@ class TFLiteExample(context: Context) {
 
     private val wildEdge: WildEdgeClient = WildEdge.init(context) {
         dsn = System.getenv("WILDEDGE_DSN") ?: ""
-        appVersion = "1.0.0"
     }
 
     private val modelFile = File(context.filesDir, "models/mobilenet_v3_int8.tflite")
 
-    // modelId inferred as "mobilenet_v3_int8", quantization inferred as "int8"
     // modelId inferred as "mobilenet_v3_int8", quantization inferred as "int8"
     private val tracked = wildEdge.decorate(
         Interpreter(modelFile, Interpreter.Options().apply { numThreads = 4 }),

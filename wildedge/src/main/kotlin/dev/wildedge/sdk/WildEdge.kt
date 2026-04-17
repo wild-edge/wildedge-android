@@ -3,7 +3,9 @@ package dev.wildedge.sdk
 import android.app.ActivityManager
 import android.content.ComponentCallbacks2
 import android.content.Context
+import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.os.Build
 import android.os.Looper
 import android.util.Log
 import dev.wildedge.sdk.events.HardwareContext
@@ -128,7 +130,7 @@ class WildEdge internal constructor(
 
     class Builder(private val context: Context) {
         var dsn: String? = System.getenv(Config.ENV_DSN)
-        var appVersion: String? = null
+        var appVersion: String? = detectAppVersion(context)
         var device: DeviceInfo? = null
         var batchSize: Int = Config.DEFAULT_BATCH_SIZE
         var maxQueueSize: Int = Config.DEFAULT_MAX_QUEUE_SIZE
@@ -259,6 +261,17 @@ class WildEdge internal constructor(
 // Maps ComponentCallbacks2 trim levels to WildEdge severity strings.
 // Returns null for levels that are normal lifecycle events (UI hidden, background caching)
 // and don't indicate memory pressure relevant to ML workloads.
+private fun detectAppVersion(context: Context): String? = try {
+    val pm = context.packageManager
+    val info = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        pm.getPackageInfo(context.packageName, PackageManager.PackageInfoFlags.of(0))
+    } else {
+        @Suppress("DEPRECATION")
+        pm.getPackageInfo(context.packageName, 0)
+    }
+    info.versionName
+} catch (_: Exception) { null }
+
 private fun trimMemoryLevel(level: Int): MemoryWarningLevel? = when (level) {
     ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW -> MemoryWarningLevel.Warning
     ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL -> MemoryWarningLevel.Serious

@@ -15,7 +15,6 @@ class OnnxExample(context: Context) {
 
     private val wildEdge: WildEdgeClient = WildEdge.init(context) {
         dsn = System.getenv("WILDEDGE_DSN") ?: ""
-        appVersion = "1.0.0"
     }
 
     private val modelFile = File(context.filesDir, "models/face_detector_int8.onnx")

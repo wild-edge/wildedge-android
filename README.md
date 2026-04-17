@@ -38,7 +38,6 @@ dependencies {
 ```kotlin
 val wildEdge = WildEdge.init(applicationContext) {
     dsn = "https://<secret>@ingest.wildedge.dev/<key>" // or WILDEDGE_DSN env var
-    appVersion = BuildConfig.VERSION_NAME
 }
 ```
 
@@ -248,7 +247,7 @@ Available types: `DetectionOutputMeta`, `GenerationOutputMeta`, `EmbeddingOutput
 | Parameter | Default | Description |
 |---|---|---|
 | `dsn` | - | `https://<secret>@ingest.wildedge.dev/<key>` (or `WILDEDGE_DSN`) |
-| `appVersion` | `null` | App version string attached to every batch |
+| `appVersion` | auto-detected | App version string attached to every batch. Override if you use a custom version scheme. |
 | `batchSize` | `10` | Events per HTTP request |
 | `maxQueueSize` | `200` | Max in-memory events; oldest dropped on overflow |
 | `flushIntervalMs` | `60_000` | How often the consumer wakes to send |
@@ -330,7 +329,7 @@ Integrate the WildEdge Android SDK (dev.wildedge:wildedge-android) into this pro
 3. Initialise WildEdge once in Application.onCreate():
       val wildEdge: WildEdgeClient = WildEdge.init(this) {
           dsn = "YOUR_DSN"   // get yours at wildedge.dev
-          appVersion = BuildConfig.VERSION_NAME
+          // appVersion is auto-detected from PackageInfo; override if needed
       }
    Inject it via constructor, DI, or a singleton wherever inference code lives.
    In tests inject WildEdgeClient.noop() instead.

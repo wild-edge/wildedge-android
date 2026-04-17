@@ -9,7 +9,6 @@ class TracingExample(context: Context) {
 
     private val wildEdge: WildEdgeClient = WildEdge.init(context) {
         dsn = System.getenv("WILDEDGE_DSN") ?: ""
-        appVersion = "1.0.0"
     }
 
     private val embedHandle = wildEdge.registerModel("embed", ModelInfo("Embed", "1", "local", "tflite"))

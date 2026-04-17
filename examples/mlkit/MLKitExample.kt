@@ -16,7 +16,6 @@ class MLKitExample(context: Context) {
 
     private val wildEdge: WildEdgeClient = WildEdge.init(context) {
         dsn = System.getenv("WILDEDGE_DSN") ?: ""
-        appVersion = "1.0.0"
     }
 
     private val handle = wildEdge.registerMlKitModel("face-detector", modelVersion = "16.1")
