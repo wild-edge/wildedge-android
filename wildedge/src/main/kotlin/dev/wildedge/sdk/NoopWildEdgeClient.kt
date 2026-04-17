@@ -16,12 +16,14 @@ internal class NoopWildEdgeClient : WildEdgeClient, SpanOwner {
 
     override fun <T> trace(
         name: String,
+        kind: SpanKind,
         attributes: Map<String, Any?>?,
         block: (SpanContext) -> T,
     ): T = runSpan(
         name = name,
         traceId = UUID.randomUUID().toString(),
         parentSpanId = null,
+        kind = kind,
         attributes = attributes,
         block = block,
     )
@@ -30,12 +32,14 @@ internal class NoopWildEdgeClient : WildEdgeClient, SpanOwner {
         name: String,
         traceId: String,
         parentSpanId: String?,
+        kind: SpanKind,
         attributes: Map<String, Any?>?,
         block: (SpanContext) -> T,
     ): T = block(SpanContext(
         traceId = traceId,
         spanId = UUID.randomUUID().toString(),
         parentSpanId = parentSpanId,
+        kind = kind,
         owner = this,
     ))
 

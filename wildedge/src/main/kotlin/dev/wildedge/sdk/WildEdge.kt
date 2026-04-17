@@ -88,13 +88,25 @@ class WildEdge internal constructor(
         c.close(timeoutMs = timeoutMs, blocking = blocking)
     }
 
-    override fun <T> trace(name: String, attributes: Map<String, Any?>?, block: (SpanContext) -> T): T =
-        runSpan(name = name, traceId = UUID.randomUUID().toString(), parentSpanId = null, attributes = attributes, block = block)
+    override fun <T> trace(
+        name: String,
+        kind: SpanKind,
+        attributes: Map<String, Any?>?,
+        block: (SpanContext) -> T,
+    ): T = runSpan(
+        name = name,
+        traceId = UUID.randomUUID().toString(),
+        parentSpanId = null,
+        kind = kind,
+        attributes = attributes,
+        block = block,
+    )
 
     override fun <T> runSpan(
         name: String,
         traceId: String,
         parentSpanId: String?,
+        kind: SpanKind,
         attributes: Map<String, Any?>?,
         block: (SpanContext) -> T,
     ): T {
@@ -102,6 +114,7 @@ class WildEdge internal constructor(
             traceId = traceId,
             spanId = UUID.randomUUID().toString(),
             parentSpanId = parentSpanId,
+            kind = kind,
             owner = this,
         )
         val prev = activeSpan.get()
@@ -109,6 +122,9 @@ class WildEdge internal constructor(
         val startMs = System.currentTimeMillis()
         try {
             return block(ctx)
+        } catch (t: Throwable) {
+            ctx.status = SpanStatus.Error
+            throw t
         } finally {
             activeSpan.set(prev)
             val durationMs = System.currentTimeMillis() - startMs
@@ -117,6 +133,8 @@ class WildEdge internal constructor(
                 traceId = ctx.traceId,
                 spanId = ctx.spanId,
                 parentSpanId = ctx.parentSpanId,
+                kind = ctx.kind.value,
+                status = ctx.status.value,
                 name = name,
                 durationMs = durationMs,
                 attributes = attributes,

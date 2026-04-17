@@ -327,6 +327,8 @@ fun buildSpanEvent(
     traceId: String,
     spanId: String,
     parentSpanId: String? = null,
+    kind: String,
+    status: String,
     name: String,
     durationMs: Long,
     attributes: Map<String, Any?>? = null,
@@ -338,6 +340,8 @@ fun buildSpanEvent(
     "span_id" to spanId,
     "parent_span_id" to parentSpanId,
     "span" to mapOf(
+        "kind" to kind,
+        "status" to status,
         "name" to name,
         "duration_ms" to durationMs,
         "attributes" to attributes,

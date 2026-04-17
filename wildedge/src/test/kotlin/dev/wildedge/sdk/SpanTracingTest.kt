@@ -24,10 +24,39 @@ class SpanTracingTest {
         val (we, queue) = setup()
         we.trace("my-op") { }
         val span = queue.events().single { it["event_type"] == "span" }
+        @Suppress("UNCHECKED_CAST")
+        val body = span["span"] as Map<String, Any?>
         assertEquals("my-op", (span["span"] as Map<*, *>)["name"])
+        assertEquals("custom", body["kind"])
+        assertEquals("ok", body["status"])
         assertNotNull(span["trace_id"])
         assertNotNull(span["span_id"])
         assertNull(span["parent_span_id"])
+    }
+
+    @Test fun traceUsesExplicitKind() {
+        val (we, queue) = setup()
+        we.trace("my-op", kind = SpanKind.Tool) { }
+        val span = queue.events().single { it["event_type"] == "span" }
+        @Suppress("UNCHECKED_CAST")
+        val body = span["span"] as Map<String, Any?>
+        assertEquals("tool", body["kind"])
+    }
+
+    @Test fun failedSpanHasErrorStatus() {
+        val (we, queue) = setup()
+        try {
+            we.trace("my-op") {
+                error("boom")
+            }
+            fail("Expected exception")
+        } catch (_: IllegalStateException) {
+            // expected
+        }
+        val span = queue.events().single { it["event_type"] == "span" }
+        @Suppress("UNCHECKED_CAST")
+        val body = span["span"] as Map<String, Any?>
+        assertEquals("error", body["status"])
     }
 
     @Test fun nestedSpanHasCorrectParentAndTraceId() {
