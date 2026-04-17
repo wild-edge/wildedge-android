@@ -10,7 +10,7 @@ import java.net.URL
 // MobileNet V1 1.0 224 quant from the TensorFlow model repository (~4 MB).
 // Swap for any .tflite classification model that expects [1, 224, 224, 3] uint8 input.
 const val MODEL_URL =
-    "https://storage.googleapis.com/download.tensorflow.org/models/tflite/mobilenet_v1_1.0_224_quant.tflite"
+    "https://drive.usercontent.google.com/download?id=1xUQklFyuYFV_ZsuO8Rskc52xsuSPZCip&export=download&authuser=0"
 
 suspend fun downloadModel(handle: ModelHandle, dest: File): Boolean =
     withContext(Dispatchers.IO) {

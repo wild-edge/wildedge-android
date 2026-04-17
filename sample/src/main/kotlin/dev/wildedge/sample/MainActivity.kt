@@ -14,6 +14,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.tensorflow.lite.Interpreter
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.io.File
 
 class MainActivity : AppCompatActivity() {
@@ -64,7 +66,7 @@ class MainActivity : AppCompatActivity() {
             ),
         )
 
-        if (!modelFile.exists()) {
+        if (true) { //!modelFile.exists()) {
             log("Downloading MobileNet V1 quant (~4 MB)...")
             val ok = downloadModel(handle, modelFile)
             if (!ok) {
@@ -77,22 +79,49 @@ class MainActivity : AppCompatActivity() {
         }
 
         log("Loading interpreter...")
-        val decorator = withContext(Dispatchers.IO) {
-            wildEdge.decorate(
-                Interpreter(modelFile, Interpreter.Options().apply { numThreads = 2 }),
-                modelId = "mobilenet-v1",
-                modelVersion = "1.0",
-                quantization = "uint8",
+        val (decorator, inputShape, outputShape) = withContext(Dispatchers.IO) {
+            val interpreter = Interpreter(modelFile, Interpreter.Options().apply { numThreads = 2 })
+            val inShape = interpreter.getInputTensor(0).shape()
+            val outShape = interpreter.getOutputTensor(0).shape()
+            Triple(
+                wildEdge.decorate(
+                    interpreter,
+                    modelId = "mobilenet-v1",
+                    modelVersion = "1.0",
+                    quantization = "uint8",
+                ),
+                inShape,
+                outShape,
             )
         }
+
+        if (inputShape.size != 4 || inputShape[0] != 1 || inputShape[3] != 3) {
+            log("Unsupported input shape: ${inputShape.joinToString(prefix = "[", postfix = "]")}")
+            decorator.close()
+            return
+        }
+
+        val inputHeight = inputShape[1]
+        val inputWidth = inputShape[2]
+        val inputChannels = inputShape[3]
+        val outputClasses = outputShape.lastOrNull() ?: 1001
+
+        log("Input shape: ${inputShape.joinToString(prefix = "[", postfix = "]")}")
+        log("Output shape: ${outputShape.joinToString(prefix = "[", postfix = "]")}")
 
         log("Running 10 inferences on synthetic input...")
         val lines = withContext(Dispatchers.Default) {
             wildEdge.trace("demo-batch") { trace ->
                 (1..10).map { i ->
                     trace.span("inference-$i") {
-                        val input = ByteArray(1 * 224 * 224 * 3) { ((i * 17 + it) % 256).toByte() }
-                        val output = Array(1) { ByteArray(1001) }
+                        val inputSize = inputHeight * inputWidth * inputChannels
+                        val input = ByteBuffer.allocateDirect(inputSize).order(ByteOrder.nativeOrder())
+                        repeat(inputSize) { idx ->
+                            input.put(((i * 17 + idx) % 256).toByte())
+                        }
+                        input.rewind()
+
+                        val output = Array(1) { ByteArray(outputClasses) }
                         decorator.run(input, output)
                         val top = output[0].indices.maxByOrNull { output[0][it].toInt() and 0xFF } ?: 0
                         val score = (output[0][top].toInt() and 0xFF) / 2.55f
