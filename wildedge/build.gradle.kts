@@ -38,13 +38,16 @@ kotlin {
 dependencies {
     // No required runtime dependencies
 
-    // Optional integrations — declared compileOnly so the host app brings its own version
+    // Optional integrations: compileOnly so the host app brings its own version.
+    // Unused integrations are never loaded at runtime -- no ClassNotFoundException risk.
+    compileOnly(libs.coroutines.android)
     compileOnly(libs.tflite)
     compileOnly(libs.tflite.play.services)
     compileOnly(libs.onnxruntime)
     compileOnly(libs.litertlm)
 
     testImplementation(libs.junit)
+    testImplementation(libs.coroutines.android)
     testImplementation(libs.mockwebserver)
     testImplementation(libs.robolectric)
     testImplementation("org.json:json:20231013")
