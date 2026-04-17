@@ -1,4 +1,8 @@
-# WildEdge Android SDK
+<p align="center">
+  <img src="docs/wildedge-logo-text.svg" alt="WildEdge" height="72"/>
+</p>
+
+<br/>
 
 [![CI](https://github.com/wild-edge/wildedge-kotlin/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/wild-edge/wildedge-kotlin/actions/workflows/ci.yml)
 
