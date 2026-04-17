@@ -1,6 +1,9 @@
 package dev.wildedge.sdk
 
+import android.app.ActivityManager
+import android.content.ComponentCallbacks2
 import android.content.Context
+import android.content.res.Configuration
 import android.os.Looper
 import android.util.Log
 import dev.wildedge.sdk.events.HardwareContext
@@ -20,6 +23,7 @@ class WildEdge internal constructor(
     private val consumer: Consumer?,
     private val hardwareSampler: HardwareSampler?,
     private val debug: Boolean,
+    private var memoryCallbackUnregister: (() -> Unit)? = null,
 ) : WildEdgeClient, SpanOwner {
     private val handles = mutableMapOf<String, ModelHandle>()
     private val handlesLock = ReentrantLock()
@@ -44,14 +48,14 @@ class WildEdge internal constructor(
     }
 
     override fun trackMemoryWarning(
-        level: String,
+        level: MemoryWarningLevel,
         memoryAvailableBytes: Long,
         activeModelIds: List<String>,
         triggeredUnload: Boolean,
         unloadedModelId: String?,
     ) {
         publish(buildMemoryWarningEvent(
-            level = level,
+            level = level.value,
             memoryAvailableBytes = memoryAvailableBytes,
             activeModelIds = activeModelIds,
             triggeredUnload = triggeredUnload,
@@ -72,6 +76,7 @@ class WildEdge internal constructor(
     override fun close(timeoutMs: Long) {
         if (closed) return
         closed = true
+        memoryCallbackUnregister?.invoke()
         hardwareSampler?.stop()
         val c = consumer ?: return
         val blocking = !isMainThread()
@@ -137,6 +142,7 @@ class WildEdge internal constructor(
         var debug: Boolean = System.getenv(Config.ENV_DEBUG) == "true"
         var onDeliveryFailure: ((reason: String, dropped: Int, queueDepth: Int) -> Unit)? = null
         var strict: Boolean = false
+        var autoTrackMemoryWarnings: Boolean = true
 
         fun build(): WildEdgeClient {
             val dsn = dsn
@@ -186,7 +192,7 @@ class WildEdge internal constructor(
 
             if (debug) Log.d("wildedge", "wildedge: initialized session=$sessionId")
 
-            return WildEdge(
+            val wildEdge = WildEdge(
                 noop = false,
                 queue = eventQueue,
                 registry = modelRegistry,
@@ -194,6 +200,43 @@ class WildEdge internal constructor(
                 hardwareSampler = sampler,
                 debug = debug,
             )
+
+            if (autoTrackMemoryWarnings) {
+                val appContext = context.applicationContext
+                val am = appContext.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+                val callback = object : ComponentCallbacks2 {
+                    override fun onTrimMemory(level: Int) {
+                        val warningLevel = trimMemoryLevel(level) ?: return
+                        val memInfo = ActivityManager.MemoryInfo()
+                        am?.getMemoryInfo(memInfo)
+                        wildEdge.trackMemoryWarning(
+                            level = warningLevel,
+                            memoryAvailableBytes = memInfo.availMem,
+                            activeModelIds = wildEdge.handlesLock.withLock {
+                                wildEdge.handles.keys.toList()
+                            },
+                            triggeredUnload = false,
+                        )
+                    }
+                    override fun onConfigurationChanged(newConfig: Configuration) = Unit
+                    override fun onLowMemory() {
+                        val memInfo = ActivityManager.MemoryInfo()
+                        am?.getMemoryInfo(memInfo)
+                        wildEdge.trackMemoryWarning(
+                            level = MemoryWarningLevel.Critical,
+                            memoryAvailableBytes = memInfo.availMem,
+                            activeModelIds = wildEdge.handlesLock.withLock {
+                                wildEdge.handles.keys.toList()
+                            },
+                            triggeredUnload = false,
+                        )
+                    }
+                }
+                appContext.registerComponentCallbacks(callback)
+                wildEdge.memoryCallbackUnregister = { appContext.unregisterComponentCallbacks(callback) }
+            }
+
+            return wildEdge
         }
 
         private fun parseDsn(dsn: String): Pair<String, String> {
@@ -211,4 +254,15 @@ class WildEdge internal constructor(
     }
 
     private fun isMainThread(): Boolean = Looper.myLooper() == Looper.getMainLooper()
+}
+
+// Maps ComponentCallbacks2 trim levels to WildEdge severity strings.
+// Returns null for levels that are normal lifecycle events (UI hidden, background caching)
+// and don't indicate memory pressure relevant to ML workloads.
+private fun trimMemoryLevel(level: Int): MemoryWarningLevel? = when (level) {
+    ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW -> MemoryWarningLevel.Warning
+    ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL -> MemoryWarningLevel.Serious
+    ComponentCallbacks2.TRIM_MEMORY_MODERATE -> MemoryWarningLevel.Warning
+    ComponentCallbacks2.TRIM_MEMORY_COMPLETE -> MemoryWarningLevel.Critical
+    else -> null
 }

@@ -7,7 +7,7 @@ internal class NoopWildEdgeClient : WildEdgeClient, SpanOwner {
         ModelHandle(modelId, info, {}, { null })
 
     override fun trackMemoryWarning(
-        level: String,
+        level: MemoryWarningLevel,
         memoryAvailableBytes: Long,
         activeModelIds: List<String>,
         triggeredUnload: Boolean,

@@ -3,7 +3,7 @@ package dev.wildedge.sdk
 interface WildEdgeClient {
     fun registerModel(modelId: String, info: ModelInfo): ModelHandle
     fun trackMemoryWarning(
-        level: String,
+        level: MemoryWarningLevel,
         memoryAvailableBytes: Long,
         activeModelIds: List<String>,
         triggeredUnload: Boolean,
