@@ -87,8 +87,12 @@ internal class HardwareSampler(
         am?.getMemoryInfo(memInfo)
         val memAvailable = if (memInfo.availMem > 0) memInfo.availMem else null
 
-        val cpuFreqMhz = readCpuFreqMhz("/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq")
-        val cpuFreqMaxMhz = readCpuFreqMhz("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq")
+        val cpuFreqMhz = (0 until Runtime.getRuntime().availableProcessors()).mapNotNull { i ->
+            readCpuFreqMhz("/sys/devices/system/cpu/cpu$i/cpufreq/scaling_cur_freq")
+        }.maxOrNull()
+        val cpuFreqMaxMhz = (0 until Runtime.getRuntime().availableProcessors()).mapNotNull { i ->
+            readCpuFreqMhz("/sys/devices/system/cpu/cpu$i/cpufreq/cpuinfo_max_freq")
+        }.maxOrNull()
 
         return HardwareContext(
             thermalState = thermalState,
