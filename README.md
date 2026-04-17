@@ -53,7 +53,7 @@ Pass the model `File` and `modelId`/`quantization` are inferred from the filenam
 ```kotlin
 val modelFile = File(modelPath) // e.g. "yolo_v8_int8.tflite"
 val interpreter = Interpreter(modelFile, Interpreter.Options())
-val tracked = wildEdge.decorate(interpreter, modelFile)
+val tracked = wildEdge.decorate(interpreter, modelFile, modelVersion = "8.0")
 // modelId = "yolo_v8_int8", quantization = "int8"
 
 tracked.run(inputBuffer, outputBuffer)
@@ -63,7 +63,7 @@ tracked.close()
 Override when you need explicit control:
 
 ```kotlin
-val tracked = wildEdge.decorate(interpreter, modelId = "yolo-v8", quantization = "int8")
+val tracked = wildEdge.decorate(interpreter, modelId = "yolo-v8", modelVersion = "8.0", quantization = "int8")
 ```
 
 ### ONNX Runtime
@@ -71,7 +71,7 @@ val tracked = wildEdge.decorate(interpreter, modelId = "yolo-v8", quantization =
 ```kotlin
 val modelFile = File(modelPath) // e.g. "face_detector_fp16.onnx"
 val session = env.createSession(modelFile.absolutePath, OrtSession.SessionOptions())
-val tracked = wildEdge.decorate(session, modelFile)
+val tracked = wildEdge.decorate(session, modelFile, modelVersion = "1.0")
 // modelId = "face_detector_fp16", quantization = "f16"
 
 val result = tracked.run(inputs)
@@ -83,7 +83,7 @@ tracked.close()
 Register a handle, then chain `.trackWith()` on any `Task<T>`:
 
 ```kotlin
-val handle = wildEdge.registerMlKitModel("face-detector")
+val handle = wildEdge.registerMlKitModel("face-detector", modelVersion = "16.1")
 
 faceDetector.process(image).trackWith(handle) { faces ->
     DetectionOutputMeta(numPredictions = faces.size)
@@ -96,7 +96,7 @@ faceDetector.process(image).trackWith(handle) { faces ->
 Wrap the `ResultListener` before passing it to `sendMessageAsync` or `runInference`:
 
 ```kotlin
-val handle = wildEdge.registerLiteRtModel("gemma-3n", quantization = "int4")
+val handle = wildEdge.registerLiteRtModel("gemma-3n", modelVersion = "1.0", quantization = "int4")
 
 // At inference time — wrap the listener, pass inputMeta for token counts
 val inputMeta = WildEdge.analyzeText(userInput)
@@ -113,8 +113,8 @@ Works identically for AICore — same `ResultListener` shape, same wrapper.
 
 ```kotlin
 val interpreter = InterpreterApi.create(modelFile, InterpreterApi.Options())
-val tracked = wildEdge.decorate(interpreter, modelFile)
-// or: wildEdge.decorate(interpreter, modelId = "my-model")
+val tracked = wildEdge.decorate(interpreter, modelFile, modelVersion = "1.0")
+// or: wildEdge.decorate(interpreter, modelId = "my-model", modelVersion = "1.0")
 
 tracked.run(inputBuffer, outputBuffer)
 tracked.close()

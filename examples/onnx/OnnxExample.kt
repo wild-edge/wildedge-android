@@ -27,7 +27,7 @@ class OnnxExample(context: Context) {
 
     // modelId inferred as "face_detector_int8", quantization inferred as "int8"
     // pass Accelerator.NNAPI if SessionOptions were configured with NNAPIExecutionProvider
-    private val tracked = wildEdge.decorate(session, modelFile)
+    private val tracked = wildEdge.decorate(session, modelFile, modelVersion = "1.0")
 
     fun run(bitmap: Bitmap, inputs: Map<String, OnnxTensor>) = tracked.run(
         inputs = inputs,

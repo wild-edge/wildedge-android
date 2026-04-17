@@ -20,9 +20,11 @@ class TFLiteExample(context: Context) {
     private val modelFile = File(context.filesDir, "models/mobilenet_v3_int8.tflite")
 
     // modelId inferred as "mobilenet_v3_int8", quantization inferred as "int8"
+    // modelId inferred as "mobilenet_v3_int8", quantization inferred as "int8"
     private val tracked = wildEdge.decorate(
         Interpreter(modelFile, Interpreter.Options().apply { numThreads = 4 }),
         modelFile,
+        modelVersion = "3.0",
     )
 
     // Pass Accelerator.GPU when using a GPU delegate so inference events carry the correct context.
@@ -31,6 +33,7 @@ class TFLiteExample(context: Context) {
     private val trackedGpu = wildEdge.decorate(
         Interpreter(modelFile, Interpreter.Options().apply { numThreads = 1 }),
         modelFile,
+        modelVersion = "3.0",
         accelerator = Accelerator.GPU,
     )
 
