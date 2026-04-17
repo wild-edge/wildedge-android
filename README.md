@@ -66,7 +66,9 @@ tracked.close()
 Override when you need explicit control:
 
 ```kotlin
-val tracked = wildEdge.decorate(interpreter, modelId = "yolo-v8", modelVersion = "8.0", quantization = "int8")
+val tracked = wildEdge.decorate(
+    interpreter, modelId = "yolo-v8", modelVersion = "8.0", quantization = "int8"
+)
 ```
 
 ### ONNX Runtime
@@ -99,7 +101,9 @@ faceDetector.process(image).trackWith(handle) { faces ->
 Wrap the `ResultListener` before passing it to `sendMessageAsync` or `runInference`:
 
 ```kotlin
-val handle = wildEdge.registerLiteRtModel("gemma-3n", modelVersion = "1.0", quantization = "int4")
+val handle = wildEdge.registerLiteRtModel(
+    "gemma-3n", modelVersion = "1.0", quantization = "int4"
+)
 
 // At inference time — wrap the listener, pass inputMeta for token counts
 val inputMeta = WildEdge.analyzeText(userInput)
@@ -199,7 +203,9 @@ handle.trackFeedback(FeedbackType.Custom("hallucination"))
 ```kotlin
 val inferenceId = handle.trackInference(durationMs = ms)
 // ... later, after user interacts ...
-handle.trackFeedback(FeedbackType.Edited, relatedInferenceId = inferenceId, editDistance = 5)
+handle.trackFeedback(
+    FeedbackType.Edited, relatedInferenceId = inferenceId, editDistance = 5
+)
 ```
 
 ## Tracing
@@ -211,14 +217,16 @@ wildEdge.trace("user-query") { trace ->
     trace.span("embed") {
         val start = System.currentTimeMillis()
         val embedding = embedModel.run(input)
-        embedHandle.trackInference(durationMs = (System.currentTimeMillis() - start).toInt())
+        val durationMs = (System.currentTimeMillis() - start).toInt()
+        embedHandle.trackInference(durationMs = durationMs)
         embedding
     }
 
     trace.span("classify") {
         val start = System.currentTimeMillis()
         val label = classifyModel.run(embedding)
-        classifyHandle.trackInference(durationMs = (System.currentTimeMillis() - start).toInt())
+        val durationMs = (System.currentTimeMillis() - start).toInt()
+        classifyHandle.trackInference(durationMs = durationMs)
         label
     }
 }
