@@ -37,7 +37,7 @@ class WildEdge internal constructor(
         }
     }
 
-    fun publish(event: MutableMap<String, Any?>) {
+    internal fun publish(event: MutableMap<String, Any?>) {
         if (noop || closed) return
         if (debug) Log.d("wildedge", "queuing event type=${event["event_type"]} model=${event["model_id"]}")
         queue.add(event)

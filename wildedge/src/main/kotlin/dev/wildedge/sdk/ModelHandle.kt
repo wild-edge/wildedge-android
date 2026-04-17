@@ -125,7 +125,7 @@ class ModelHandle internal constructor(
     }
 
     fun trackFeedback(
-        feedbackType: String,
+        feedbackType: FeedbackType,
         relatedInferenceId: String? = null,
         delayMs: Int? = null,
         editDistance: Int? = null,
@@ -134,7 +134,7 @@ class ModelHandle internal constructor(
         publish(buildFeedbackEvent(
             modelId = modelId,
             relatedInferenceId = inferenceId,
-            feedbackType = feedbackType,
+            feedbackType = feedbackType.value,
             delayMs = delayMs,
             editDistance = editDistance,
         ).toMutableMap())

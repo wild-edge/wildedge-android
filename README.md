@@ -170,6 +170,33 @@ handle.trackInference(
 )
 
 handle.trackUnload()
+
+// Optional: record user feedback linked to the last inference.
+handle.trackFeedback(FeedbackType.ThumbsUp)
+
+// Use FeedbackType.Custom for domain-specific signals.
+handle.trackFeedback(FeedbackType.Custom("hallucination"))
+```
+
+## Feedback types
+
+`FeedbackType` is a sealed class with built-in values for common cases and an escape hatch for custom signals:
+
+| Value | Meaning |
+|---|---|
+| `FeedbackType.ThumbsUp` | User explicitly approved the result |
+| `FeedbackType.ThumbsDown` | User explicitly rejected the result |
+| `FeedbackType.Accepted` | User accepted / acted on the result without editing |
+| `FeedbackType.Edited` | User accepted but modified the result (pass `editDistance` if available) |
+| `FeedbackType.Rejected` | User dismissed or ignored the result |
+| `FeedbackType.Custom(value)` | Any domain-specific signal (e.g. `"hallucination"`, `"safety_flag"`) |
+
+`trackFeedback` automatically links to the most recent inference on that handle. Pass `relatedInferenceId` explicitly when linking to an earlier inference:
+
+```kotlin
+val inferenceId = handle.trackInference(durationMs = ms)
+// ... later, after user interacts ...
+handle.trackFeedback(FeedbackType.Edited, relatedInferenceId = inferenceId, editDistance = 5)
 ```
 
 ## Tracing

@@ -5,6 +5,7 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import dev.wildedge.sample.databinding.ActivityMainBinding
+import dev.wildedge.sdk.FeedbackType
 import dev.wildedge.sdk.ModelInfo
 import dev.wildedge.sdk.WildEdge
 import dev.wildedge.sdk.integrations.decorate
@@ -100,6 +101,10 @@ class MainActivity : AppCompatActivity() {
             }
         }
         lines.forEach { log(it) }
+
+        // Simulate user accepting the top result — links to the last inference automatically.
+        handle.trackFeedback(FeedbackType.Accepted)
+        log("Tracked feedback: accepted")
 
         decorator.close()
         log("Pending events: ${wildEdge.pendingCount}")
