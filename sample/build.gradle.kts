@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
 }
-
+tasks.register("prepareKotlinBuildScriptModel"){}
 android {
     namespace = "dev.wildedge.sample"
     compileSdk = 35
