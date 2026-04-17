@@ -1,6 +1,6 @@
 package dev.wildedge.sdk
 
-internal fun testWildEdge() = WildEdge(
+internal fun testWildEdge(): WildEdgeClient = WildEdge(
     noop = false,
     queue = EventQueue(),
     registry = ModelRegistry(),

@@ -3,14 +3,14 @@ package dev.wildedge.sdk.integrations
 import dev.wildedge.sdk.InputModality
 import dev.wildedge.sdk.ModelInfo
 import dev.wildedge.sdk.OutputModality
-import dev.wildedge.sdk.WildEdge
+import dev.wildedge.sdk.WildEdgeClient
 import dev.wildedge.sdk.events.ImageInputMeta
 import org.tensorflow.lite.Interpreter
 import java.io.File
 
 class TFLiteDecorator(
     private val interpreter: Interpreter,
-    private val wildEdge: WildEdge,
+    private val wildEdge: WildEdgeClient,
     modelId: String,
     modelVersion: String = "unknown",
     quantization: String? = null,
@@ -66,7 +66,7 @@ class TFLiteDecorator(
 }
 
 // Infers modelId and quantization from the model file name.
-fun WildEdge.decorate(
+fun WildEdgeClient.decorate(
     interpreter: Interpreter,
     modelFile: File,
     modelVersion: String = "unknown",
@@ -80,7 +80,7 @@ fun WildEdge.decorate(
 )
 
 // Explicit control over all metadata.
-fun WildEdge.decorate(
+fun WildEdgeClient.decorate(
     interpreter: Interpreter,
     modelId: String,
     modelVersion: String = "unknown",

@@ -6,12 +6,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import dev.wildedge.sample.databinding.ActivityMainBinding
 import dev.wildedge.sdk.FeedbackType
-import dev.wildedge.sdk.InputModality
 import dev.wildedge.sdk.ModelInfo
-import dev.wildedge.sdk.OutputModality
 import dev.wildedge.sdk.WildEdge
+import dev.wildedge.sdk.WildEdgeClient
 import dev.wildedge.sdk.integrations.decorate
-import dev.wildedge.sdk.trackSuspendInference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -21,7 +19,7 @@ import java.io.File
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private lateinit var wildEdge: WildEdge
+    private lateinit var wildEdge: WildEdgeClient
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -92,20 +90,13 @@ class MainActivity : AppCompatActivity() {
         val lines = withContext(Dispatchers.Default) {
             wildEdge.trace("demo-batch") { trace ->
                 (1..10).map { i ->
-                    // trackSuspendInference times the block and emits the event automatically —
-                    // no manual System.currentTimeMillis() needed.
-                    handle.trackSuspendInference(
-                        inputModality = InputModality.Image,
-                        outputModality = OutputModality.Detection,
-                    ) {
-                        trace.span("inference-$i") {
-                            val input = ByteArray(1 * 224 * 224 * 3) { ((i * 17 + it) % 256).toByte() }
-                            val output = Array(1) { ByteArray(1001) }
-                            decorator.run(input, output)
-                            val top = output[0].indices.maxByOrNull { output[0][it].toInt() and 0xFF } ?: 0
-                            val score = (output[0][top].toInt() and 0xFF) / 2.55f
-                            "  run $i  class $top  score ${"%.1f".format(score)}%"
-                        }
+                    trace.span("inference-$i") {
+                        val input = ByteArray(1 * 224 * 224 * 3) { ((i * 17 + it) % 256).toByte() }
+                        val output = Array(1) { ByteArray(1001) }
+                        decorator.run(input, output)
+                        val top = output[0].indices.maxByOrNull { output[0][it].toInt() and 0xFF } ?: 0
+                        val score = (output[0][top].toInt() and 0xFF) / 2.55f
+                        "  run $i  class $top  score ${"%.1f".format(score)}%"
                     }
                 }
             }

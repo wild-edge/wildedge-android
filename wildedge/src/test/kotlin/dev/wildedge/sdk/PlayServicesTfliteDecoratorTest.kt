@@ -37,7 +37,7 @@ class PlayServicesTfliteDecoratorTest {
         override fun close() { closedCalled = true }
     }
 
-    private fun makeDecorator(): Triple<FakeInterpreter, WildEdge, PlayServicesTfliteDecorator> {
+    private fun makeDecorator(): Triple<FakeInterpreter, WildEdgeClient, PlayServicesTfliteDecorator> {
         val fake = FakeInterpreter()
         val wildEdge = testWildEdge()
         val decorator = PlayServicesTfliteDecorator(fake, wildEdge, modelId = "test-model")

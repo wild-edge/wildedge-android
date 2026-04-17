@@ -258,6 +258,36 @@ Available types: `DetectionOutputMeta`, `GenerationOutputMeta`, `EmbeddingOutput
 | `debug` | `false` | Verbose logcat output (or `WILDEDGE_DEBUG=true`) |
 | `strict` | `false` | Throw on queue overflow instead of dropping |
 
+## Testing
+
+`WildEdge.init()` returns `WildEdgeClient`. Declare your field against the interface so you can substitute a no-op in tests:
+
+```kotlin
+// Production
+val client: WildEdgeClient = WildEdge.init(context) { dsn = "..." }
+
+// Tests — zero overhead, no background threads, no DSN required
+val client: WildEdgeClient = WildEdgeClient.noop()
+```
+
+The noop client executes `trace` and `span` blocks normally (so your pipeline logic runs) but discards all events. You can inject it via constructor or a DI framework:
+
+```kotlin
+class InferenceService(private val wildEdge: WildEdgeClient) {
+    private val handle = wildEdge.registerModel("my-model", ...)
+
+    fun run(input: ByteArray): Result {
+        val start = System.currentTimeMillis()
+        val result = model.run(input)
+        handle.trackInference(durationMs = (System.currentTimeMillis() - start).toInt())
+        return result
+    }
+}
+
+// In tests:
+val service = InferenceService(WildEdgeClient.noop())
+```
+
 ## Lifecycle
 
 Call `flush()` before your process exits to drain remaining events.

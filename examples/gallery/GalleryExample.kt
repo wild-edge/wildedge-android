@@ -10,13 +10,14 @@ import com.google.ai.edge.litertlm.MessageCallback
 import dev.wildedge.sdk.Accelerator
 import dev.wildedge.sdk.InputModality
 import dev.wildedge.sdk.WildEdge
+import dev.wildedge.sdk.WildEdgeClient
 import dev.wildedge.sdk.analysis.analyzeText
 import dev.wildedge.sdk.integrations.decorate
 import dev.wildedge.sdk.integrations.trackWith
 
 class GalleryExample(context: Context) {
 
-    private val wildEdge = WildEdge.init(context) {
+    private val wildEdge: WildEdgeClient = WildEdge.init(context) {
         dsn = System.getenv("WILDEDGE_DSN") ?: ""
         appVersion = "1.0.0"
     }

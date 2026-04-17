@@ -6,12 +6,12 @@ import dev.wildedge.sdk.InputModality
 import dev.wildedge.sdk.ModelHandle
 import dev.wildedge.sdk.ModelInfo
 import dev.wildedge.sdk.OutputModality
-import dev.wildedge.sdk.WildEdge
+import dev.wildedge.sdk.WildEdgeClient
 import dev.wildedge.sdk.analysis.approximateBpeTokenCount
 import dev.wildedge.sdk.events.GenerationOutputMeta
 import dev.wildedge.sdk.events.TextInputMeta
 
-fun WildEdge.registerLiteRtModel(
+fun WildEdgeClient.registerLiteRtModel(
     modelId: String,
     modelName: String = modelId,
     modelVersion: String = "unknown",

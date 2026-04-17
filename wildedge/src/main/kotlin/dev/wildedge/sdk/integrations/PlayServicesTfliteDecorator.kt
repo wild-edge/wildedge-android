@@ -3,14 +3,14 @@ package dev.wildedge.sdk.integrations
 import dev.wildedge.sdk.InputModality
 import dev.wildedge.sdk.ModelInfo
 import dev.wildedge.sdk.OutputModality
-import dev.wildedge.sdk.WildEdge
+import dev.wildedge.sdk.WildEdgeClient
 import dev.wildedge.sdk.events.ImageInputMeta
 import org.tensorflow.lite.InterpreterApi
 import java.io.File
 
 class PlayServicesTfliteDecorator(
     private val interpreter: InterpreterApi,
-    wildEdge: WildEdge,
+    wildEdge: WildEdgeClient,
     modelId: String,
     modelVersion: String = "unknown",
     quantization: String? = null,
@@ -60,7 +60,7 @@ class PlayServicesTfliteDecorator(
     }
 }
 
-fun WildEdge.decorate(
+fun WildEdgeClient.decorate(
     interpreter: InterpreterApi,
     modelFile: File,
     modelVersion: String = "unknown",
@@ -73,7 +73,7 @@ fun WildEdge.decorate(
     accelerator = accelerator,
 )
 
-fun WildEdge.decorate(
+fun WildEdgeClient.decorate(
     interpreter: InterpreterApi,
     modelId: String,
     modelVersion: String = "unknown",

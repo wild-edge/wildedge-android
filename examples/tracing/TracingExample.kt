@@ -3,10 +3,11 @@ package examples.tracing
 import android.content.Context
 import dev.wildedge.sdk.ModelInfo
 import dev.wildedge.sdk.WildEdge
+import dev.wildedge.sdk.WildEdgeClient
 
 class TracingExample(context: Context) {
 
-    private val wildEdge = WildEdge.init(context) {
+    private val wildEdge: WildEdgeClient = WildEdge.init(context) {
         dsn = System.getenv("WILDEDGE_DSN") ?: ""
         appVersion = "1.0.0"
     }

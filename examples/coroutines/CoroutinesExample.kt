@@ -5,6 +5,7 @@ import dev.wildedge.sdk.InputModality
 import dev.wildedge.sdk.ModelInfo
 import dev.wildedge.sdk.OutputModality
 import dev.wildedge.sdk.WildEdge
+import dev.wildedge.sdk.WildEdgeClient
 import dev.wildedge.sdk.analysis.analyzeText
 import dev.wildedge.sdk.events.TextInputMeta
 import dev.wildedge.sdk.trackSuspendInference
@@ -15,7 +16,7 @@ import kotlinx.coroutines.withContext
 
 class CoroutinesExample(context: Context) {
 
-    private val wildEdge = WildEdge.init(context) {
+    private val wildEdge: WildEdgeClient = WildEdge.init(context) {
         dsn = System.getenv("WILDEDGE_DSN") ?: ""
         appVersion = "1.0.0"
     }

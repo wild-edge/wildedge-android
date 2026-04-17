@@ -5,13 +5,13 @@ import ai.onnxruntime.OrtSession
 import dev.wildedge.sdk.InputModality
 import dev.wildedge.sdk.ModelInfo
 import dev.wildedge.sdk.OutputModality
-import dev.wildedge.sdk.WildEdge
+import dev.wildedge.sdk.WildEdgeClient
 import dev.wildedge.sdk.events.ImageInputMeta
 import java.io.File
 
 class OrtDecorator(
     private val session: OrtSession,
-    private val wildEdge: WildEdge,
+    private val wildEdge: WildEdgeClient,
     modelId: String,
     modelVersion: String = "unknown",
     quantization: String? = null,
@@ -64,7 +64,7 @@ class OrtDecorator(
     }
 }
 
-fun WildEdge.decorate(
+fun WildEdgeClient.decorate(
     session: OrtSession,
     modelFile: File,
     modelVersion: String = "unknown",
@@ -77,7 +77,7 @@ fun WildEdge.decorate(
     accelerator = accelerator,
 )
 
-fun WildEdge.decorate(
+fun WildEdgeClient.decorate(
     session: OrtSession,
     modelId: String,
     modelVersion: String = "unknown",

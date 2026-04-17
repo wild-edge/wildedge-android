@@ -20,13 +20,13 @@ class WildEdge internal constructor(
     private val consumer: Consumer?,
     private val hardwareSampler: HardwareSampler?,
     private val debug: Boolean,
-) {
+) : WildEdgeClient, SpanOwner {
     private val handles = mutableMapOf<String, ModelHandle>()
     private val handlesLock = ReentrantLock()
     @Volatile private var closed = false
     private val activeSpan = ThreadLocal<SpanContext?>()
 
-    fun registerModel(modelId: String, info: ModelInfo): ModelHandle {
+    override fun registerModel(modelId: String, info: ModelInfo): ModelHandle {
         if (noop || closed) return ModelHandle(modelId, info, {}, { null })
         return handlesLock.withLock {
             handles.getOrPut(modelId) {
@@ -43,12 +43,12 @@ class WildEdge internal constructor(
         queue.add(event)
     }
 
-    fun trackMemoryWarning(
+    override fun trackMemoryWarning(
         level: String,
         memoryAvailableBytes: Long,
         activeModelIds: List<String>,
         triggeredUnload: Boolean,
-        unloadedModelId: String? = null,
+        unloadedModelId: String?,
     ) {
         publish(buildMemoryWarningEvent(
             level = level,
@@ -59,7 +59,7 @@ class WildEdge internal constructor(
         ).toMutableMap())
     }
 
-    fun flush(timeoutMs: Long = Config.DEFAULT_SHUTDOWN_FLUSH_TIMEOUT_MS) {
+    override fun flush(timeoutMs: Long) {
         val c = consumer ?: return
         if (isMainThread()) {
             if (debug) Log.w("wildedge", "flush() called on main thread; running async flush")
@@ -69,7 +69,7 @@ class WildEdge internal constructor(
         }
     }
 
-    fun close(timeoutMs: Long = Config.DEFAULT_SHUTDOWN_FLUSH_TIMEOUT_MS) {
+    override fun close(timeoutMs: Long) {
         if (closed) return
         closed = true
         hardwareSampler?.stop()
@@ -81,10 +81,10 @@ class WildEdge internal constructor(
         c.close(timeoutMs = timeoutMs, blocking = blocking)
     }
 
-    fun <T> trace(name: String, attributes: Map<String, Any?>? = null, block: (SpanContext) -> T): T =
+    override fun <T> trace(name: String, attributes: Map<String, Any?>?, block: (SpanContext) -> T): T =
         runSpan(name = name, traceId = UUID.randomUUID().toString(), parentSpanId = null, attributes = attributes, block = block)
 
-    internal fun <T> runSpan(
+    override fun <T> runSpan(
         name: String,
         traceId: String,
         parentSpanId: String?,
@@ -117,7 +117,7 @@ class WildEdge internal constructor(
         }
     }
 
-    val pendingCount: Int get() = queue.length()
+    override val pendingCount: Int get() = queue.length()
 
     // DSL builder
 
@@ -138,11 +138,11 @@ class WildEdge internal constructor(
         var onDeliveryFailure: ((reason: String, dropped: Int, queueDepth: Int) -> Unit)? = null
         var strict: Boolean = false
 
-        fun build(): WildEdge {
+        fun build(): WildEdgeClient {
             val dsn = dsn
             if (dsn.isNullOrBlank()) {
                 Log.w("wildedge", "wildedge: no DSN configured; client is disabled")
-                return WildEdge(noop = true, EventQueue(), ModelRegistry(), null, null, debug)
+                return NoopWildEdgeClient()
             }
 
             val (secret, host) = parseDsn(dsn)
@@ -206,7 +206,7 @@ class WildEdge internal constructor(
     }
 
     companion object {
-        fun init(context: Context, block: Builder.() -> Unit = {}): WildEdge =
+        fun init(context: Context, block: Builder.() -> Unit = {}): WildEdgeClient =
             Builder(context).apply(block).build()
     }
 

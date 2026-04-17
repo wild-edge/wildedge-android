@@ -5,12 +5,12 @@ import dev.wildedge.sdk.InputModality
 import dev.wildedge.sdk.ModelHandle
 import dev.wildedge.sdk.ModelInfo
 import dev.wildedge.sdk.OutputModality
-import dev.wildedge.sdk.WildEdge
+import dev.wildedge.sdk.WildEdgeClient
 import dev.wildedge.sdk.events.DetectionOutputMeta
 import dev.wildedge.sdk.events.ImageInputMeta
 
 // modelName defaults to modelId — only override if the display name differs.
-fun WildEdge.registerMlKitModel(
+fun WildEdgeClient.registerMlKitModel(
     modelId: String,
     modelName: String = modelId,
     modelSource: String = "mlkit",

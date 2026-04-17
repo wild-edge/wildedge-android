@@ -6,13 +6,14 @@ import ai.onnxruntime.OrtSession
 import android.content.Context
 import android.graphics.Bitmap
 import dev.wildedge.sdk.WildEdge
+import dev.wildedge.sdk.WildEdgeClient
 import dev.wildedge.sdk.analysis.analyzeImage
 import dev.wildedge.sdk.integrations.decorate
 import java.io.File
 
 class OnnxExample(context: Context) {
 
-    private val wildEdge = WildEdge.init(context) {
+    private val wildEdge: WildEdgeClient = WildEdge.init(context) {
         dsn = System.getenv("WILDEDGE_DSN") ?: ""
         appVersion = "1.0.0"
     }

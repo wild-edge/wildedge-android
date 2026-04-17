@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import dev.wildedge.sdk.Accelerator
 import dev.wildedge.sdk.WildEdge
+import dev.wildedge.sdk.WildEdgeClient
 import dev.wildedge.sdk.analysis.analyzeImage
 import dev.wildedge.sdk.integrations.decorate
 import org.tensorflow.lite.Interpreter
@@ -11,7 +12,7 @@ import java.io.File
 
 class TFLiteExample(context: Context) {
 
-    private val wildEdge = WildEdge.init(context) {
+    private val wildEdge: WildEdgeClient = WildEdge.init(context) {
         dsn = System.getenv("WILDEDGE_DSN") ?: ""
         appVersion = "1.0.0"
     }

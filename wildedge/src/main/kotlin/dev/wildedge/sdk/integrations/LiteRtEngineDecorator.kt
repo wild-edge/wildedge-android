@@ -6,7 +6,7 @@ import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
 import dev.wildedge.sdk.ModelHandle
 import dev.wildedge.sdk.ModelInfo
-import dev.wildedge.sdk.WildEdge
+import dev.wildedge.sdk.WildEdgeClient
 import java.io.File
 
 class LiteRtEngineDecorator(
@@ -23,7 +23,7 @@ class LiteRtEngineDecorator(
     }
 }
 
-fun WildEdge.decorate(
+fun WildEdgeClient.decorate(
     engine: Engine,
     config: EngineConfig,
     loadDurationMs: Int = 0,
@@ -47,7 +47,7 @@ fun WildEdge.decorate(
     return LiteRtEngineDecorator(engine, handle)
 }
 
-fun WildEdge.decorate(
+fun WildEdgeClient.decorate(
     engine: Engine,
     config: EngineConfig,
     loadDurationMs: Int = 0,
