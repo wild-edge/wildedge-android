@@ -305,6 +305,46 @@ override fun onTerminate() {
 }
 ```
 
+## AI-assisted integration
+
+Paste the prompt below into your coding agent (Claude Code, Cursor, Copilot, etc.) to get guided integration. It will scan your codebase, find all ML inference code, and wire up WildEdge with the right pattern for each framework.
+
+```
+Integrate the WildEdge Android SDK (dev.wildedge:wildedge-android) into this project.
+
+1. Search the codebase for all ML inference code: TFLite Interpreter, ONNX OrtSession,
+   Play Services InterpreterApi, LiteRT Engine/Conversation, MLKit Task calls, and any
+   direct HTTP calls to remote LLM APIs (OpenAI, Gemini, etc.).
+
+2. For each one found, wrap it with the right WildEdge integration:
+   - TFLite: wildEdge.decorate(interpreter, modelFile, modelVersion = "...")
+   - ONNX: wildEdge.decorate(session, modelFile, modelVersion = "...")
+   - LiteRT: wildEdge.decorate(engine, config, modelVersion = "...")
+   - MLKit: wildEdge.registerMlKitModel(...) and Task.trackWith(handle)
+   - Remote LLM: wildEdge.registerModel(...) and handle.trackInference(...)
+   Pass a real modelVersion string. Check the model filename, asset path, or any
+   version constant already in the code.
+   For suspend/coroutine inference code use handle.trackSuspendInference { }.
+   For streaming LLM output (Flow<String>) use flow.trackWith(handle).
+
+3. Initialise WildEdge once in Application.onCreate():
+      val wildEdge: WildEdgeClient = WildEdge.init(this) {
+          dsn = "YOUR_DSN"   // get yours at wildedge.dev
+          appVersion = BuildConfig.VERSION_NAME
+      }
+   Inject it via constructor, DI, or a singleton wherever inference code lives.
+   In tests inject WildEdgeClient.noop() instead.
+
+4. If multiple models run in sequence for a single user request (embed then classify,
+   prefill then decode), wrap the pipeline in wildEdge.trace("name") { } so events
+   are correlated on the dashboard.
+
+5. Call wildEdge.close() in Application.onTerminate() or the appropriate lifecycle hook.
+
+6. Pass only metadata as inputMeta (WildEdge.analyzeText / analyzeImage).
+   WildEdge never transmits raw inputs.
+```
+
 ## Development
 
 ### Requirements
