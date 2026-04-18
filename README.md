@@ -4,7 +4,9 @@
 
 <br/>
 
-[![CI](https://github.com/wild-edge/wildedge-kotlin/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/wild-edge/wildedge-kotlin/actions/workflows/ci.yml)
+[![CI](https://github.com/wild-edge/wildedge-android/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/wild-edge/wildedge-android/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Min SDK](https://img.shields.io/badge/minSdk-24-brightgreen.svg)](https://developer.android.com/about/versions/nougat)
 
 On-device ML inference monitoring for Android. Tracks latency, confidence, drift, and hardware metrics without ever sending raw inputs.
 

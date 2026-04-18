@@ -28,3 +28,4 @@ mlkit-face = { group = "com.google.mlkit", name = "face-detection", version = "1
 android-library = { id = "com.android.library", version.ref = "agp" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+nmcp = { id = "com.gradleup.nmcp", version = "0.0.9" }

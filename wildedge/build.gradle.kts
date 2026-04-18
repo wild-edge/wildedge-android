@@ -99,22 +99,7 @@ afterEvaluate {
             }
         }
 
-        repositories {
-            maven {
-                name = "sonatype"
-                val releasesUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
-                val snapshotsUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
-                url = uri(if ((version as String).endsWith("SNAPSHOT")) snapshotsUrl else releasesUrl)
-                credentials {
-                    username = providers.gradleProperty("sonatypeUsername")
-                        .orElse(providers.environmentVariable("SONATYPE_USERNAME"))
-                        .orNull
-                    password = providers.gradleProperty("sonatypePassword")
-                        .orElse(providers.environmentVariable("SONATYPE_PASSWORD"))
-                        .orNull
-                }
-            }
-        }
+
     }
 
     signing {
