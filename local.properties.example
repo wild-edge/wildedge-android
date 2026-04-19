@@ -6,3 +6,8 @@ sdk.dir=/path/to/android/sdk
 
 # Your WildEdge project DSN. Leave blank to run the sample app in noop mode.
 wildedge.dsn=
+
+# Optional: Hugging Face read token for samples/on-device-llm.
+# Only needed if you swap the default model (Qwen2.5 0.5B) for a gated one such as Gemma.
+# Generate one at https://huggingface.co/settings/tokens (read scope is sufficient).
+hf.token=

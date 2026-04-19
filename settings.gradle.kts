@@ -14,6 +14,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "wildedge-kotlin"
+rootProject.name = "wildedge-android"
 include(":wildedge")
-include(":sample")
+include(":samples:image-classification")
+include(":samples:on-device-llm")

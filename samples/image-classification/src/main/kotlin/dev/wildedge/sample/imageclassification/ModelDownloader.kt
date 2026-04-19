@@ -1,4 +1,4 @@
-package dev.wildedge.sample
+package dev.wildedge.sample.imageclassification
 
 import dev.wildedge.sdk.ModelHandle
 import kotlinx.coroutines.Dispatchers
