@@ -212,6 +212,29 @@ data class DetectionOutputMeta(
 }
 
 /**
+ * Output metadata for classification inference events.
+ *
+ * @property numPredictions Total number of classes in the output.
+ * @property topK Ranked list of top predictions.
+ * @property avgConfidence Confidence of the top-1 prediction.
+ */
+data class ClassificationOutputMeta(
+    val numPredictions: Int? = null,
+    val topK: List<TopPrediction>? = null,
+    val avgConfidence: Float? = null,
+) {
+    /** Serialises this metadata to a wire-format map, omitting null fields. */
+    fun toMap(): Map<String, Any?> = mapOf(
+        "task" to "classification",
+        "num_predictions" to numPredictions,
+        "top_k" to topK?.map { p ->
+            mapOf("label" to p.label, "confidence" to p.confidence).filterValues { it != null }
+        },
+        "avg_confidence" to avgConfidence,
+    ).filterValues { it != null }
+}
+
+/**
  * Output metadata for text generation inference events.
  *
  * @property tokensIn Number of input (prompt) tokens.

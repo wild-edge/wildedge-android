@@ -5,7 +5,7 @@
 
     <application
         android:label="WildEdge Sample"
-        android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
+        android:theme="@style/Theme.AppCompat.Light.NoActionBar"
         android:allowBackup="false"
         android:supportsRtl="true"
         android:networkSecurityConfig="@xml/network_security_config">

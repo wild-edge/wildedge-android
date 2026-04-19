@@ -106,26 +106,38 @@ class MainActivity : AppCompatActivity() {
         val inputChannels = inputShape[3]
         val outputClasses = outputShape.lastOrNull() ?: 1001
 
-        log("Input shape: ${inputShape.joinToString(prefix = "[", postfix = "]")}")
-        log("Output shape: ${outputShape.joinToString(prefix = "[", postfix = "]")}")
+        log("Input: ${inputShape.toList()}  Output: ${outputShape.toList()}")
 
-        log("Running 10 inferences on synthetic input...")
+        val testImages = listOf(
+            "red" to Triple(220, 50, 50),
+            "green" to Triple(50, 180, 50),
+            "blue" to Triple(50, 100, 220),
+            "yellow" to Triple(230, 210, 50),
+            "orange" to Triple(230, 120, 40),
+            "purple" to Triple(140, 50, 200),
+            "cyan" to Triple(50, 200, 200),
+            "pink" to Triple(230, 100, 160),
+            "white" to Triple(240, 240, 240),
+            "black" to Triple(15, 15, 15),
+        )
+
+        log("Running ${testImages.size} inferences...")
         val lines = withContext(Dispatchers.Default) {
             wildEdge.trace("demo-batch") { trace ->
-                (1..10).map { i ->
-                    trace.span("inference-$i") {
+                testImages.map { (name, rgb) ->
+                    trace.span("inference-$name") {
                         val inputSize = inputHeight * inputWidth * inputChannels
                         val input = ByteBuffer.allocateDirect(inputSize).order(ByteOrder.nativeOrder())
-                        repeat(inputSize) { idx ->
-                            input.put(((i * 17 + idx) % 256).toByte())
+                        repeat(inputHeight * inputWidth) {
+                            input.put(rgb.first.toByte())
+                            input.put(rgb.second.toByte())
+                            input.put(rgb.third.toByte())
                         }
                         input.rewind()
 
                         val output = Array(1) { ByteArray(outputClasses) }
                         decorator.run(input, output)
-                        val top = output[0].indices.maxByOrNull { output[0][it].toInt() and 0xFF } ?: 0
-                        val score = (output[0][top].toInt() and 0xFF) / 2.55f
-                        "  run $i  class $top  score ${"%.1f".format(score)}%"
+                        "  $name"
                     }
                 }
             }
