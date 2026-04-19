@@ -16,7 +16,11 @@ class ConsumerTest {
     @get:Rule val tmp = TemporaryFolder()
     private lateinit var server: MockWebServer
 
-    @Before fun setUp() { server = MockWebServer(); server.start() }
+    @Before fun setUp() {
+        server = MockWebServer()
+        server.start()
+    }
+
     @After fun tearDown() { server.shutdown() }
 
     private fun accepted() = MockResponse()

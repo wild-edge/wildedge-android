@@ -11,6 +11,7 @@ import dev.wildedge.sdk.analysis.approximateBpeTokenCount
 import dev.wildedge.sdk.events.GenerationOutputMeta
 import dev.wildedge.sdk.events.TextInputMeta
 
+/** Registers a LiteRT model and returns a [ModelHandle] for tracking its lifecycle. */
 fun WildEdgeClient.registerLiteRtModel(
     modelId: String,
     modelName: String = modelId,
@@ -27,11 +28,12 @@ fun WildEdgeClient.registerLiteRtModel(
     ),
 )
 
-// Wraps a streaming result listener (gallery's ResultListener or any matching lambda).
-// No cast needed -- defined on the raw function type.
-// inputModality defaults to Text; pass Multimodal when images or audio are also present.
-// tokenizer: optional function that counts tokens in the full assembled output string.
-//            Without it, token count is approximated from character count (~4 chars/token).
+/**
+ * Wraps a streaming result listener `(String, Boolean, String?) -> Unit` to capture generation metrics.
+ *
+ * Pass [inputMeta] from `WildEdge.analyzeText()` to record token counts and language.
+ * Set [inputModality] to [InputModality.Multimodal] when images or audio are also included.
+ */
 fun ((String, Boolean, String?) -> Unit).trackWith(
     handle: ModelHandle,
     inputMeta: TextInputMeta? = null,
@@ -72,10 +74,11 @@ fun ((String, Boolean, String?) -> Unit).trackWith(
     }
 }
 
-// For direct litertlm users who call conversation.sendMessageAsync() themselves.
-// Wraps a MessageCallback to capture generation metrics.
-// tokenizer: optional function that counts tokens in the full assembled output string.
-//            Without it, token count is approximated from character count (~4 chars/token).
+/**
+ * Wraps a [MessageCallback] to capture generation metrics on completion or error.
+ *
+ * Pass [inputMeta] from `WildEdge.analyzeText()` to record token counts and language.
+ */
 fun MessageCallback.trackWith(
     handle: ModelHandle,
     inputMeta: TextInputMeta? = null,

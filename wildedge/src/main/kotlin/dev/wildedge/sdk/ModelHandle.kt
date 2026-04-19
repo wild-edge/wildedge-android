@@ -1,7 +1,18 @@
 package dev.wildedge.sdk
 
-import dev.wildedge.sdk.events.*
+import dev.wildedge.sdk.events.HardwareContext
+import dev.wildedge.sdk.events.buildErrorEvent
+import dev.wildedge.sdk.events.buildFeedbackEvent
+import dev.wildedge.sdk.events.buildInferenceEvent
+import dev.wildedge.sdk.events.buildModelDownloadEvent
+import dev.wildedge.sdk.events.buildModelLoadEvent
+import dev.wildedge.sdk.events.buildModelUnloadEvent
 
+/**
+ * Handle for a registered model; use its `track*` functions to record lifecycle and inference events.
+ *
+ * Obtain via [WildEdgeClient.registerModel].
+ */
 class ModelHandle internal constructor(
     val modelId: String,
     val info: ModelInfo,
@@ -16,6 +27,7 @@ class ModelHandle internal constructor(
     var acceleratorActual: Accelerator? = null
         internal set
 
+    /** Records a model load (or warm-up) event. */
     fun trackLoad(
         durationMs: Int,
         memoryBytes: Long? = null,
@@ -26,33 +38,39 @@ class ModelHandle internal constructor(
         threads: Int? = null,
     ) {
         loadedAt = System.currentTimeMillis()
-        publish(buildModelLoadEvent(
-            modelId = modelId,
-            durationMs = durationMs,
-            memoryBytes = memoryBytes,
-            accelerator = accelerator,
-            success = success,
-            errorCode = errorCode,
-            coldStart = coldStart,
-            threads = threads,
-        ).toMutableMap())
+        publish(
+            buildModelLoadEvent(
+                modelId = modelId,
+                durationMs = durationMs,
+                memoryBytes = memoryBytes,
+                accelerator = accelerator,
+                success = success,
+                errorCode = errorCode,
+                coldStart = coldStart,
+                threads = threads,
+            ).toMutableMap()
+        )
     }
 
+    /** Records an explicit model unload event. */
     fun trackUnload(
         durationMs: Int = 0,
         reason: String = "explicit",
         memoryFreedBytes: Long? = null,
     ) {
         val uptimeMs = if (loadedAt > 0) System.currentTimeMillis() - loadedAt else null
-        publish(buildModelUnloadEvent(
-            modelId = modelId,
-            durationMs = durationMs,
-            reason = reason,
-            memoryFreedBytes = memoryFreedBytes,
-            uptimeMs = uptimeMs,
-        ).toMutableMap())
+        publish(
+            buildModelUnloadEvent(
+                modelId = modelId,
+                durationMs = durationMs,
+                reason = reason,
+                memoryFreedBytes = memoryFreedBytes,
+                uptimeMs = uptimeMs,
+            ).toMutableMap()
+        )
     }
 
+    /** Records a model download event. */
     fun trackDownload(
         sourceUrl: String,
         sourceType: String,
@@ -65,21 +83,29 @@ class ModelHandle internal constructor(
         success: Boolean = true,
         errorCode: String? = null,
     ) {
-        publish(buildModelDownloadEvent(
-            modelId = modelId,
-            sourceUrl = sourceUrl,
-            sourceType = sourceType,
-            fileSizeBytes = fileSizeBytes,
-            downloadedBytes = downloadedBytes,
-            durationMs = durationMs,
-            networkType = networkType,
-            resumed = resumed,
-            cacheHit = cacheHit,
-            success = success,
-            errorCode = errorCode,
-        ).toMutableMap())
+        publish(
+            buildModelDownloadEvent(
+                modelId = modelId,
+                sourceUrl = sourceUrl,
+                sourceType = sourceType,
+                fileSizeBytes = fileSizeBytes,
+                downloadedBytes = downloadedBytes,
+                durationMs = durationMs,
+                networkType = networkType,
+                resumed = resumed,
+                cacheHit = cacheHit,
+                success = success,
+                errorCode = errorCode,
+            ).toMutableMap()
+        )
     }
 
+    /**
+     * Records an inference event and returns the generated inference ID.
+     *
+     * Hardware context is automatically captured from the background sampler unless [hardware] is provided.
+     * Trace context is propagated from the enclosing [WildEdgeClient.trace] span when present.
+     */
     fun trackInference(
         durationMs: Int,
         inputModality: InputModality? = null,
@@ -124,6 +150,7 @@ class ModelHandle internal constructor(
         return inferenceId
     }
 
+    /** Records user feedback linked to [relatedInferenceId], or the most recent inference if omitted. */
     fun trackFeedback(
         feedbackType: FeedbackType,
         relatedInferenceId: String? = null,
@@ -131,29 +158,35 @@ class ModelHandle internal constructor(
         editDistance: Int? = null,
     ) {
         val inferenceId = relatedInferenceId ?: lastInferenceId ?: return
-        publish(buildFeedbackEvent(
-            modelId = modelId,
-            relatedInferenceId = inferenceId,
-            feedbackType = feedbackType.value,
-            delayMs = delayMs,
-            editDistance = editDistance,
-        ).toMutableMap())
+        publish(
+            buildFeedbackEvent(
+                modelId = modelId,
+                relatedInferenceId = inferenceId,
+                feedbackType = feedbackType.value,
+                delayMs = delayMs,
+                editDistance = editDistance,
+            ).toMutableMap()
+        )
     }
 
+    /** Records an error event associated with this model. */
     fun trackError(
         errorCode: String,
         errorMessage: String? = null,
         stackTraceHash: String? = null,
         relatedEventId: String? = null,
     ) {
-        publish(buildErrorEvent(
-            modelId = modelId,
-            errorCode = errorCode,
-            errorMessage = errorMessage,
-            stackTraceHash = stackTraceHash,
-            relatedEventId = relatedEventId,
-        ).toMutableMap())
+        publish(
+            buildErrorEvent(
+                modelId = modelId,
+                errorCode = errorCode,
+                errorMessage = errorMessage,
+                stackTraceHash = stackTraceHash,
+                relatedEventId = relatedEventId,
+            ).toMutableMap()
+        )
     }
 
+    /** Equivalent to [trackUnload] with reason "explicit". */
     override fun close() = trackUnload(reason = "explicit")
 }

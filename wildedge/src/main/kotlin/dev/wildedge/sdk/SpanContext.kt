@@ -11,6 +11,7 @@ internal interface SpanOwner {
     ): T
 }
 
+/** Categorises the type of work being traced in a span. */
 enum class SpanKind(val value: String) {
     AgentStep("agent_step"),
     Tool("tool"),
@@ -23,11 +24,17 @@ enum class SpanKind(val value: String) {
     Custom("custom"),
 }
 
+/** Outcome of a completed span. */
 enum class SpanStatus(val value: String) {
     Ok("ok"),
     Error("error"),
 }
 
+/**
+ * Propagation context attached to an active span.
+ *
+ * Obtain via [WildEdgeClient.trace] or [SpanContext.span].
+ */
 class SpanContext internal constructor(
     val traceId: String,
     val spanId: String,
@@ -36,6 +43,7 @@ class SpanContext internal constructor(
     var status: SpanStatus = SpanStatus.Ok,
     private val owner: SpanOwner,
 ) {
+    /** Creates a child span nested within this span. */
     fun <T> span(
         name: String,
         kind: SpanKind = SpanKind.Custom,

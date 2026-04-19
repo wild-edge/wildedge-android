@@ -19,6 +19,7 @@ internal class Transmitter(
     private val apiKey: String,
     private val timeoutMs: Int = Config.HTTP_TIMEOUT_MS,
 ) {
+    @Suppress("MagicNumber")
     fun send(batchJson: String): IngestResponse {
         val url = URL("${host.trimEnd('/')}/api/ingest")
         val conn = url.openConnection() as HttpURLConnection
@@ -42,13 +43,14 @@ internal class Transmitter(
                     ?.bufferedReader()?.readText() ?: ""
             } catch (_: Exception) { "" }
 
-            handleResponse(code, body, batchJson)
+            handleResponse(code, body)
         } finally {
             conn.disconnect()
         }
     }
 
-    private fun handleResponse(code: Int, body: String, batchJson: String): IngestResponse {
+    @Suppress("MagicNumber")
+    private fun handleResponse(code: Int, body: String): IngestResponse {
         return when (code) {
             202 -> IngestResponse(
                 status = body.extractJsonString("status") ?: "accepted",

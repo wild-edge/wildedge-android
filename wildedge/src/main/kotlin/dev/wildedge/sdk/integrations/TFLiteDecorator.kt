@@ -8,6 +8,11 @@ import dev.wildedge.sdk.events.ImageInputMeta
 import org.tensorflow.lite.Interpreter
 import java.io.File
 
+/**
+ * Wraps a TFLite [Interpreter] to automatically record inference metrics via [dev.wildedge.sdk.ModelHandle].
+ *
+ * Create via [WildEdgeClient.decorate] rather than constructing directly.
+ */
 class TFLiteDecorator(
     private val interpreter: Interpreter,
     private val wildEdge: WildEdgeClient,
@@ -28,6 +33,7 @@ class TFLiteDecorator(
         ),
     ).also { it.acceleratorActual = accelerator }
 
+    /** Runs inference on a single input tensor, recording an inference event. */
     fun run(input: Any, output: Any, inputMeta: ImageInputMeta? = null) {
         trackInferenceExecution(
             handle = handle,
@@ -39,6 +45,7 @@ class TFLiteDecorator(
         }
     }
 
+    /** Runs inference on multiple input/output tensors, recording an inference event. */
     fun runForMultipleInputsOutputs(
         inputs: Array<Any>,
         outputs: Map<Int, Any>,
@@ -54,32 +61,38 @@ class TFLiteDecorator(
         }
     }
 
+    /** Returns the input tensor at [index]. */
     fun getInputTensor(index: Int) = interpreter.getInputTensor(index)
+
+    /** Returns the output tensor at [index]. */
     fun getOutputTensor(index: Int) = interpreter.getOutputTensor(index)
+
     val inputTensorCount: Int get() = interpreter.inputTensorCount
     val outputTensorCount: Int get() = interpreter.outputTensorCount
 
+    /** Records an unload event and closes the underlying interpreter. */
     override fun close() {
         handle.trackUnload()
         interpreter.close()
     }
 }
 
-// Infers modelId and quantization from the model file name.
+/** Creates a [TFLiteDecorator], inferring model metadata from [modelFile]. */
 fun WildEdgeClient.decorate(
     interpreter: Interpreter,
     modelFile: File,
     modelVersion: String = "unknown",
     accelerator: dev.wildedge.sdk.Accelerator? = null,
 ): TFLiteDecorator = TFLiteDecorator(
-    interpreter, this,
+    interpreter,
+    this,
     modelId = inferModelId(modelFile),
     modelVersion = modelVersion,
     quantization = inferQuantization(modelFile),
     accelerator = accelerator,
 )
 
-// Explicit control over all metadata.
+/** Creates a [TFLiteDecorator] with explicit model metadata. */
 fun WildEdgeClient.decorate(
     interpreter: Interpreter,
     modelId: String,

@@ -24,6 +24,7 @@ class SpanTracingTest {
         val (we, queue) = setup()
         we.trace("my-op") { }
         val span = queue.events().single { it["event_type"] == "span" }
+
         @Suppress("UNCHECKED_CAST")
         val body = span["span"] as Map<String, Any?>
         assertEquals("my-op", (span["span"] as Map<*, *>)["name"])
@@ -38,6 +39,7 @@ class SpanTracingTest {
         val (we, queue) = setup()
         we.trace("my-op", kind = SpanKind.Tool) { }
         val span = queue.events().single { it["event_type"] == "span" }
+
         @Suppress("UNCHECKED_CAST")
         val body = span["span"] as Map<String, Any?>
         assertEquals("tool", body["kind"])
@@ -54,6 +56,7 @@ class SpanTracingTest {
             // expected
         }
         val span = queue.events().single { it["event_type"] == "span" }
+
         @Suppress("UNCHECKED_CAST")
         val body = span["span"] as Map<String, Any?>
         assertEquals("error", body["status"])
@@ -116,6 +119,7 @@ class SpanTracingTest {
         val (we, queue) = setup()
         we.trace("op", attributes = mapOf("user_id" to "u1")) { }
         val span = queue.events().single { it["event_type"] == "span" }
+
         @Suppress("UNCHECKED_CAST")
         val body = span["span"] as Map<String, Any?>
         assertEquals(mapOf("user_id" to "u1"), body["attributes"])

@@ -18,6 +18,7 @@ internal fun inferQuantization(file: File): String? {
     }
 }
 
+@Suppress("TooGenericExceptionCaught")
 internal inline fun <T> trackInferenceExecution(
     handle: ModelHandle,
     inputModality: InputModality,

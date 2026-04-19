@@ -2,7 +2,6 @@ package dev.wildedge.sdk
 
 import android.content.Context
 import android.content.pm.PackageInfo
-import android.content.pm.PackageManager
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -17,7 +16,10 @@ class AppVersionDetectionTest {
 
     @Test fun detectsVersionNameFromPackageManager() {
         shadowOf(context.packageManager).apply {
-            val info = PackageInfo().also { it.packageName = context.packageName; it.versionName = "2.5.1" }
+            val info = PackageInfo().also {
+                it.packageName = context.packageName
+                it.versionName = "2.5.1"
+            }
             installPackage(info)
         }
 
@@ -31,7 +33,10 @@ class AppVersionDetectionTest {
 
     @Test fun appVersionCanBeOverridden() {
         shadowOf(context.packageManager).apply {
-            val info = PackageInfo().also { it.packageName = context.packageName; it.versionName = "2.5.1" }
+            val info = PackageInfo().also {
+                it.packageName = context.packageName
+                it.versionName = "2.5.1"
+            }
             installPackage(info)
         }
 

@@ -30,15 +30,20 @@ internal class Consumer(
         }
     }
     private val drainLock = ReentrantLock()
+
     @Volatile private var workerThread: Thread? = null
     private val closed = AtomicBoolean(false)
+
     @Volatile private var lastFlushAt = System.currentTimeMillis()
+
     @Volatile private var backoffMs = Config.BACKOFF_MIN_MS
 
     fun start() {
         executor.scheduleWithFixedDelay(
             ::tick,
-            0L, Config.IDLE_POLL_MS, TimeUnit.MILLISECONDS,
+            0L,
+            Config.IDLE_POLL_MS,
+            TimeUnit.MILLISECONDS,
         )
     }
 

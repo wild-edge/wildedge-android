@@ -394,6 +394,12 @@ Output: `wildedge/build/outputs/aar/wildedge-release.aar`
 ./gradlew :wildedge:lint
 ```
 
+### Run detekt
+
+```bash
+./gradlew detekt
+```
+
 ### Publish to local Maven (for local app integration testing)
 
 ```bash

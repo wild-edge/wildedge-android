@@ -1,5 +1,6 @@
 package dev.wildedge.sdk
 
+/** Modality of data consumed by a model. */
 enum class InputModality(val value: String) {
     Image("image"),
     Audio("audio"),
@@ -9,6 +10,7 @@ enum class InputModality(val value: String) {
     Multimodal("multimodal"),
 }
 
+/** Modality of data produced by a model. */
 enum class OutputModality(val value: String) {
     Detection("detection"),
     Generation("generation"),

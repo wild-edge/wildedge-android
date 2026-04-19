@@ -67,6 +67,7 @@ class LiteRtTrackingTest {
         tracked("", true, null)
 
         val inference = events.first { it["event_type"] == "inference" }
+
         @Suppress("UNCHECKED_CAST")
         val outputMeta = (inference["inference"] as Map<String, Any?>)["output_meta"] as Map<String, Any?>?
         val tokensOut = outputMeta?.get("tokens_out") as? Int
@@ -83,6 +84,7 @@ class LiteRtTrackingTest {
         tracked("", true, null)
 
         val inference = events.first { it["event_type"] == "inference" }
+
         @Suppress("UNCHECKED_CAST")
         val outputMeta = (inference["inference"] as Map<String, Any?>)["output_meta"] as Map<String, Any?>?
         assertNotNull(outputMeta?.get("time_to_first_token_ms"))
@@ -96,6 +98,7 @@ class LiteRtTrackingTest {
         tracked("", true, null)
 
         val inference = events.first { it["event_type"] == "inference" }
+
         @Suppress("UNCHECKED_CAST")
         val outputMeta = (inference["inference"] as Map<String, Any?>)["output_meta"] as Map<String, Any?>?
         assertNull(outputMeta?.get("time_to_first_token_ms"))
@@ -109,6 +112,7 @@ class LiteRtTrackingTest {
         tracked("", true, null)
 
         val inference = events.first { it["event_type"] == "inference" }
+
         @Suppress("UNCHECKED_CAST")
         val outputMeta = (inference["inference"] as Map<String, Any?>)["output_meta"] as Map<String, Any?>?
         assertEquals(17, outputMeta?.get("tokens_in"))
@@ -124,6 +128,7 @@ class LiteRtTrackingTest {
         tracked("", true, null)
 
         val inference = events.first { it["event_type"] == "inference" }
+
         @Suppress("UNCHECKED_CAST")
         val outputMeta = (inference["inference"] as Map<String, Any?>)["output_meta"] as Map<String, Any?>?
         assertEquals(2, outputMeta?.get("tokens_out"))
@@ -139,6 +144,7 @@ class LiteRtTrackingTest {
         tracked("", true, null)
 
         val inference = events.first { it["event_type"] == "inference" }
+
         @Suppress("UNCHECKED_CAST")
         val outputMeta = (inference["inference"] as Map<String, Any?>)["output_meta"] as Map<String, Any?>?
         assertEquals(1, outputMeta?.get("tokens_out"))
@@ -152,6 +158,7 @@ class LiteRtTrackingTest {
         tracked("", true, null)
 
         val inference = events.first { it["event_type"] == "inference" }
+
         @Suppress("UNCHECKED_CAST")
         val outputMeta = (inference["inference"] as Map<String, Any?>)["output_meta"] as Map<String, Any?>?
         assertEquals(42, outputMeta?.get("tokens_out"))
@@ -160,7 +167,10 @@ class LiteRtTrackingTest {
     @Test fun customTokenizerReceivesFullAssembledOutput() {
         val (handle, _) = captureHandle()
         var tokenizerInput: String? = null
-        val tracked = noop.trackWith(handle, tokenizer = { text -> tokenizerInput = text; 1 })
+        val tracked = noop.trackWith(handle, tokenizer = { text ->
+            tokenizerInput = text
+            1
+        })
 
         tracked("hello", false, null)
         tracked(" world", false, null)

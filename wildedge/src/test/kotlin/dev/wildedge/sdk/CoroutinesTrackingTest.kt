@@ -46,6 +46,7 @@ class CoroutinesTrackingTest {
             handle.trackSuspendInference<Unit> { throw IllegalStateException("boom") }
         }
         val inference = events.first { it["event_type"] == "inference" }
+
         @Suppress("UNCHECKED_CAST")
         val inf = inference["inference"] as Map<String, Any?>
         assertEquals(false, inf["success"])
@@ -68,6 +69,7 @@ class CoroutinesTrackingTest {
             outputModality = OutputModality.Detection,
         ) { Unit }
         val inference = events.first { it["event_type"] == "inference" }
+
         @Suppress("UNCHECKED_CAST")
         val inf = inference["inference"] as Map<String, Any?>
         assertEquals("image", inf["input_modality"])
@@ -101,6 +103,7 @@ class CoroutinesTrackingTest {
             .trackWith(handle)
             .collect {}
         val inference = events.first { it["event_type"] == "inference" }
+
         @Suppress("UNCHECKED_CAST")
         val outputMeta = (inference["inference"] as Map<String, Any?>)["output_meta"] as Map<String, Any?>?
         assertEquals(2, outputMeta?.get("tokens_out"))
@@ -114,6 +117,7 @@ class CoroutinesTrackingTest {
             emit("second chunk")
         }.trackWith(handle).collect {}
         val inference = events.first { it["event_type"] == "inference" }
+
         @Suppress("UNCHECKED_CAST")
         val outputMeta = (inference["inference"] as Map<String, Any?>)["output_meta"] as Map<String, Any?>?
         assertNotNull(outputMeta?.get("time_to_first_token_ms"))
@@ -123,6 +127,7 @@ class CoroutinesTrackingTest {
         val (handle, events) = captureHandle()
         flow { emit("some output") }.trackWith(handle, tokenizer = { 99 }).collect {}
         val inference = events.first { it["event_type"] == "inference" }
+
         @Suppress("UNCHECKED_CAST")
         val outputMeta = (inference["inference"] as Map<String, Any?>)["output_meta"] as Map<String, Any?>?
         assertEquals(99, outputMeta?.get("tokens_out"))

@@ -1,6 +1,7 @@
 [versions]
 agp = "8.7.3"
 kotlin = "2.3.0"
+detekt = "1.23.8"
 junit = "4.13.2"
 mockwebserver = "4.12.0"
 robolectric = "4.14.1"
@@ -23,9 +24,11 @@ tflite-play-services = { group = "com.google.android.gms", name = "play-services
 onnxruntime = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version = "1.17.3" }
 litertlm = { group = "com.google.ai.edge.litertlm", name = "litertlm-android", version = "0.10.0" }
 mlkit-face = { group = "com.google.mlkit", name = "face-detection", version = "16.1.7" }
+detekt-formatting = { group = "io.gitlab.arturbosch.detekt", name = "detekt-formatting", version.ref = "detekt" }
 
 [plugins]
 android-library = { id = "com.android.library", version.ref = "agp" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 nmcp = { id = "com.gradleup.nmcp", version = "0.0.9" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }

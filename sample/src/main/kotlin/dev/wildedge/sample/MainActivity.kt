@@ -14,9 +14,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.tensorflow.lite.Interpreter
+import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.io.File
 
 class MainActivity : AppCompatActivity() {
 
@@ -66,7 +66,7 @@ class MainActivity : AppCompatActivity() {
             ),
         )
 
-        if (true) { //!modelFile.exists()) {
+        if (true) { // !modelFile.exists()) {
             log("Downloading MobileNet V1 quant (~4 MB)...")
             val ok = downloadModel(handle, modelFile)
             if (!ok) {

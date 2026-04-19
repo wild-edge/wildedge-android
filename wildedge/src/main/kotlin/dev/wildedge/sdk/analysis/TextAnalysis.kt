@@ -4,16 +4,32 @@ import dev.wildedge.sdk.WildEdge
 import dev.wildedge.sdk.events.TextInputMeta
 import kotlin.math.roundToInt
 
-// Estimates BPE token count from a character count.
+private const val CHARS_PER_TOKEN = 4.0
+private const val WORDS_PER_TOKEN_RATIO = 0.75
+private const val LATIN_SCRIPT_THRESHOLD = 0.5f
+private const val CONFIDENCE_THRESHOLD = 0.5f
+private const val EXCLUSIVE_CHAR_SCORE = 4f
+private const val STRONG_CHAR_SCORE = 1.5f
+private const val STOP_WORD_SCORE = 2f
+private const val MIN_TOTAL_SCORE = 4f
+private const val MIN_WORD_LENGTH = 2
+
+// Estimates BPE token count from character count.
 // OpenAI rule of thumb: ~4 chars per token for common English text.
-// See: https://platform.openai.com/tokenizer
 // Accumulate charCount across streaming chunks and call once at the end.
 internal fun approximateBpeTokenCount(charCount: Int): Int =
-    (charCount / 4.0).roundToInt().coerceAtLeast(1)
+    (charCount / CHARS_PER_TOKEN).roundToInt().coerceAtLeast(1)
 
-// Analyzes a text string and returns TextInputMeta.
-// tokenizer: optional function to count tokens (e.g. your model's actual tokenizer).
-//            Without it, tokenCount is estimated as wordCount / 0.75 (rough GPT heuristic).
+/**
+ * Analyzes a text string and returns [TextInputMeta] for use with [dev.wildedge.sdk.ModelHandle.trackInference].
+ *
+ * @param text Input text to analyze.
+ * @param promptType Optional label for the prompt style (e.g. "instruction", "chat").
+ * @param turnIndex Conversation turn index for multi-turn sessions.
+ * @param hasAttachments Whether the input includes file or image attachments.
+ * @param tokenizer Optional function that counts tokens. Without it, token count is estimated
+ *   as `wordCount / 0.75` (rough GPT heuristic).
+ */
 fun WildEdge.Companion.analyzeText(
     text: String,
     promptType: String? = null,
@@ -23,7 +39,7 @@ fun WildEdge.Companion.analyzeText(
 ): TextInputMeta {
     val words = text.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
     val wordCount = words.size
-    val tokenCount = tokenizer?.invoke(text) ?: (wordCount / 0.75).toInt()
+    val tokenCount = tokenizer?.invoke(text) ?: (wordCount / WORDS_PER_TOKEN_RATIO).toInt()
 
     val language = detectLanguage(text)
 
@@ -47,7 +63,11 @@ private data class LanguageHint(val tag: String, val confidence: Float)
 private fun detectLanguage(text: String): LanguageHint? {
     if (text.isBlank()) return null
 
-    var cjk = 0; var arabic = 0; var cyrillic = 0; var devanagari = 0; var latin = 0
+    var cjk = 0
+    var arabic = 0
+    var cyrillic = 0
+    var devanagari = 0
+    var latin = 0
 
     for (ch in text) {
         when {
@@ -61,20 +81,20 @@ private fun detectLanguage(text: String): LanguageHint? {
 
     val total = (cjk + arabic + cyrillic + devanagari + latin).takeIf { it > 0 } ?: return null
 
-    if (latin.toFloat() / total > 0.5f) return detectLatinLanguage(text)
+    if (latin.toFloat() / total > LATIN_SCRIPT_THRESHOLD) return detectLatinLanguage(text)
 
     val dominant = listOf(
         cjk to "zh", arabic to "ar", cyrillic to "ru", devanagari to "hi",
     ).maxByOrNull { it.first } ?: return null
 
     val confidence = dominant.first.toFloat() / total
-    return if (confidence > 0.5f) LanguageHint(dominant.second, confidence) else null
+    return if (confidence > CONFIDENCE_THRESHOLD) LanguageHint(dominant.second, confidence) else null
 }
 
 private data class LatinProfile(
     val tag: String,
-    val exclusive: Set<Char>,  // chars unique (or near-unique) to this language
-    val strong: Set<Char>,     // chars strongly associated but occasionally shared
+    val exclusive: Set<Char>,
+    val strong: Set<Char>,
     val stopWords: Set<String>,
 )
 
@@ -125,37 +145,37 @@ private val latinProfiles = listOf(
 //   stop word match  -> 2 pts each
 // Requires a minimum total score of 4 to avoid committing on a single weak signal.
 private fun detectLatinLanguage(text: String): LanguageHint? {
-    val words = text.lowercase().split(Regex("\\W+")).filter { it.length >= 2 }.toHashSet()
+    val words = text.lowercase().split(Regex("\\W+")).filter { it.length >= MIN_WORD_LENGTH }.toHashSet()
 
     val scores = latinProfiles.mapNotNull { profile ->
         var score = 0f
         for (ch in text) {
-            if (ch in profile.exclusive) score += 4f
-            if (ch in profile.strong) score += 1.5f
+            if (ch in profile.exclusive) score += EXCLUSIVE_CHAR_SCORE
+            if (ch in profile.strong) score += STRONG_CHAR_SCORE
         }
-        score += profile.stopWords.count { it in words } * 2f
+        score += profile.stopWords.count { it in words } * STOP_WORD_SCORE
         if (score > 0f) profile.tag to score else null
     }
 
     if (scores.isEmpty()) return null
 
     val best = scores.maxByOrNull { it.second }!!
-    if (best.second < 4f) return null
+    if (best.second < MIN_TOTAL_SCORE) return null
 
     val total = scores.sumOf { it.second.toDouble() }.toFloat()
     val confidence = best.second / total
-    return if (confidence >= 0.5f) LanguageHint(best.first, confidence) else null
+    return if (confidence >= CONFIDENCE_THRESHOLD) LanguageHint(best.first, confidence) else null
 }
 
 private val codePatterns = listOf(
-    Regex("""\bfun\s+\w+\s*\("""),          // Kotlin/Swift
-    Regex("""\bdef\s+\w+\s*[\(:]"""),        // Python/Ruby
-    Regex("""\bfunction\s+\w+\s*\("""),      // JS/TS
-    Regex("""\bclass\s+\w+[\s\{:]"""),       // most languages
-    Regex("""[{};]\s*\n"""),                 // C-family block structure
-    Regex("""\bimport\s+[\w.]+"""),          // imports
-    Regex("""->\s*\w+"""),                   // arrow types / lambdas
-    Regex("""```[\w]*\n"""),                 // markdown code fences
+    Regex("""\bfun\s+\w+\s*\("""),
+    Regex("""\bdef\s+\w+\s*[\(:]"""),
+    Regex("""\bfunction\s+\w+\s*\("""),
+    Regex("""\bclass\s+\w+[\s\{:]"""),
+    Regex("""[{};]\s*\n"""),
+    Regex("""\bimport\s+[\w.]+"""),
+    Regex("""->\s*\w+"""),
+    Regex("""```[\w]*\n"""),
 )
 
 private fun containsCode(text: String): Boolean =
