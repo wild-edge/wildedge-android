@@ -43,7 +43,11 @@ class WildEdge internal constructor(
             handles.getOrPut(modelId) {
                 registry.register(modelId, info)
                 if (debug) Log.d("wildedge", "registered model id=$modelId format=${info.modelFormat}")
-                ModelHandle(modelId, info, ::publish, { hardwareSampler?.snapshot() }, { activeSpan.get() })
+                ModelHandle(modelId, info, ::publish, {
+                    hardwareSampler?.snapshot().also { hw ->
+                        if (debug) Log.d("wildedge", "hardware snapshot for model=$modelId: $hw")
+                    }
+                }, { activeSpan.get() })
             }
         }
     }
