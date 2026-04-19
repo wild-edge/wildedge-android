@@ -21,6 +21,8 @@ class OrtDecorator(
     modelVersion: String = "unknown",
     quantization: String? = null,
     accelerator: dev.wildedge.sdk.Accelerator? = null,
+    private val labels: List<String>? = null,
+    private val numClasses: Int = labels?.size ?: 0,
 ) : AutoCloseable {
 
     val handle = wildEdge.registerModel(
@@ -34,15 +36,19 @@ class OrtDecorator(
         ),
     ).also { it.acceleratorActual = accelerator }
 
+    private val outputModality = if (numClasses > 0) OutputModality.Classification else OutputModality.Tensor
+
     /** Runs inference on the given inputs, recording an inference event. */
     fun run(inputs: Map<String, OnnxTensor>, inputMeta: ImageInputMeta? = null): OrtSession.Result {
+        var result: OrtSession.Result? = null
         return trackInferenceExecution(
             handle = handle,
             inputModality = if (inputMeta != null) InputModality.Image else InputModality.Tensor,
-            outputModality = OutputModality.Tensor,
-            inputMeta = inputMeta?.toMap()
+            outputModality = outputModality,
+            inputMeta = inputMeta?.toMap(),
+            outputMetaProvider = { result?.let { ortOutputMeta(it, numClasses, labels) } },
         ) {
-            session.run(inputs)
+            session.run(inputs).also { result = it }
         }
     }
 
@@ -52,13 +58,15 @@ class OrtDecorator(
         inputs: Map<String, OnnxTensor>,
         inputMeta: ImageInputMeta? = null,
     ): OrtSession.Result {
+        var result: OrtSession.Result? = null
         return trackInferenceExecution(
             handle = handle,
             inputModality = if (inputMeta != null) InputModality.Image else InputModality.Tensor,
-            outputModality = OutputModality.Tensor,
-            inputMeta = inputMeta?.toMap()
+            outputModality = outputModality,
+            inputMeta = inputMeta?.toMap(),
+            outputMetaProvider = { result?.let { ortOutputMeta(it, numClasses, labels) } },
         ) {
-            session.run(inputs, inputNames)
+            session.run(inputs, inputNames).also { result = it }
         }
     }
 
@@ -78,6 +86,8 @@ fun WildEdgeClient.decorate(
     modelFile: File,
     modelVersion: String = "unknown",
     accelerator: dev.wildedge.sdk.Accelerator? = null,
+    labels: List<String>? = null,
+    numClasses: Int = labels?.size ?: 0,
 ): OrtDecorator = OrtDecorator(
     session,
     this,
@@ -85,6 +95,8 @@ fun WildEdgeClient.decorate(
     modelVersion = modelVersion,
     quantization = inferQuantization(modelFile),
     accelerator = accelerator,
+    labels = labels,
+    numClasses = numClasses,
 )
 
 /** Creates an [OrtDecorator] with explicit model metadata. */
@@ -94,4 +106,6 @@ fun WildEdgeClient.decorate(
     modelVersion: String = "unknown",
     quantization: String? = null,
     accelerator: dev.wildedge.sdk.Accelerator? = null,
-): OrtDecorator = OrtDecorator(session, this, modelId, modelVersion, quantization, accelerator)
+    labels: List<String>? = null,
+    numClasses: Int = labels?.size ?: 0,
+): OrtDecorator = OrtDecorator(session, this, modelId, modelVersion, quantization, accelerator, labels, numClasses)

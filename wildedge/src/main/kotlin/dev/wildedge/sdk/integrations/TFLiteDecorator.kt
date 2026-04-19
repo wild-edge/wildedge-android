@@ -21,6 +21,7 @@ class TFLiteDecorator(
     quantization: String? = null,
     accelerator: dev.wildedge.sdk.Accelerator? = null,
     private val labels: List<String>? = null,
+    private val numClasses: Int = labels?.size ?: 0,
 ) : AutoCloseable {
 
     val handle = wildEdge.registerModel(
@@ -33,12 +34,6 @@ class TFLiteDecorator(
             quantization = quantization,
         ),
     ).also { it.acceleratorActual = accelerator }
-
-    private val numClasses: Int = try {
-        interpreter.getOutputTensor(0).shape().last()
-    } catch (_: Exception) {
-        0
-    }
 
     private val outputModality = if (numClasses > 0) OutputModality.Classification else OutputModality.Tensor
 
@@ -95,6 +90,7 @@ fun WildEdgeClient.decorate(
     modelVersion: String = "unknown",
     accelerator: dev.wildedge.sdk.Accelerator? = null,
     labels: List<String>? = null,
+    numClasses: Int = labels?.size ?: 0,
 ): TFLiteDecorator = TFLiteDecorator(
     interpreter,
     this,
@@ -103,6 +99,7 @@ fun WildEdgeClient.decorate(
     quantization = inferQuantization(modelFile),
     accelerator = accelerator,
     labels = labels,
+    numClasses = numClasses,
 )
 
 /** Creates a [TFLiteDecorator] with explicit model metadata. */
@@ -113,4 +110,14 @@ fun WildEdgeClient.decorate(
     quantization: String? = null,
     accelerator: dev.wildedge.sdk.Accelerator? = null,
     labels: List<String>? = null,
-): TFLiteDecorator = TFLiteDecorator(interpreter, this, modelId, modelVersion, quantization, accelerator, labels)
+    numClasses: Int = labels?.size ?: 0,
+): TFLiteDecorator = TFLiteDecorator(
+    interpreter,
+    this,
+    modelId,
+    modelVersion,
+    quantization,
+    accelerator,
+    labels,
+    numClasses,
+)

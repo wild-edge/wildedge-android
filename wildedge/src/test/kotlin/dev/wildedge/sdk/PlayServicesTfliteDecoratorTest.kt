@@ -101,4 +101,40 @@ class PlayServicesTfliteDecoratorTest {
         val decorator = PlayServicesTfliteDecorator(fake, testWildEdge(), modelId = "m", accelerator = Accelerator.GPU)
         assertEquals(Accelerator.GPU, decorator.handle.acceleratorActual)
     }
+
+    @Test fun noOutputMetaByDefault() {
+        val (wildEdge, queue) = testWildEdgeWithQueue()
+        val decorator = PlayServicesTfliteDecorator(FakeInterpreter(), wildEdge, modelId = "m")
+        decorator.run(Any(), Array(1) { FloatArray(3) { 1f } })
+        @Suppress("UNCHECKED_CAST")
+        val inference = queue.peekMany(1).first()["inference"] as Map<String, Any?>
+        assertNull(inference["output_meta"])
+    }
+
+    @Test fun outputMetaPresentWhenNumClassesSet() {
+        val (wildEdge, queue) = testWildEdgeWithQueue()
+        val output = Array(1) { FloatArray(3) { 0f }.also { it[1] = 10f } }
+        val decorator = PlayServicesTfliteDecorator(FakeInterpreter(), wildEdge, modelId = "m", numClasses = 3)
+        decorator.run(Any(), output)
+        @Suppress("UNCHECKED_CAST")
+        val inference = queue.peekMany(1).first()["inference"] as Map<String, Any?>
+        assertNotNull(inference["output_meta"])
+        @Suppress("UNCHECKED_CAST")
+        val meta = inference["output_meta"] as Map<String, Any?>
+        assertEquals("classification", meta["task"])
+    }
+
+    @Test fun outputMetaUsesLabelsWhenProvided() {
+        val (wildEdge, queue) = testWildEdgeWithQueue()
+        val output = Array(1) { FloatArray(3) { 0f }.also { it[2] = 10f } }
+        val labels = listOf("cat", "dog", "bird")
+        val decorator = PlayServicesTfliteDecorator(FakeInterpreter(), wildEdge, modelId = "m", labels = labels)
+        decorator.run(Any(), output)
+        @Suppress("UNCHECKED_CAST")
+        val inference = queue.peekMany(1).first()["inference"] as Map<String, Any?>
+
+        @Suppress("UNCHECKED_CAST")
+        val topK = (inference["output_meta"] as Map<String, Any?>)["top_k"] as List<Map<String, Any?>>
+        assertEquals("bird", topK.first()["label"])
+    }
 }

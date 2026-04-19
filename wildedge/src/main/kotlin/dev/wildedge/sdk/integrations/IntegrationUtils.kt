@@ -1,5 +1,7 @@
 package dev.wildedge.sdk.integrations
 
+import ai.onnxruntime.OnnxTensor
+import ai.onnxruntime.OrtSession
 import dev.wildedge.sdk.InputModality
 import dev.wildedge.sdk.ModelHandle
 import dev.wildedge.sdk.OutputModality
@@ -92,6 +94,18 @@ internal fun classificationOutputMeta(
         avgConfidence = topIdx.firstOrNull()
             ?.let { i -> (probs[i] * CONFIDENCE_SCALE).toInt() / CONFIDENCE_SCALE.toFloat() },
     )
+}
+
+@Suppress("TooGenericExceptionCaught")
+internal fun ortOutputMeta(
+    result: OrtSession.Result,
+    numClasses: Int,
+    labels: List<String>?,
+): Map<String, Any?>? = try {
+    val tensor = result.firstOrNull()?.value as? OnnxTensor ?: return null
+    classificationOutputMeta(tensor.value, numClasses, labels)?.toMap()
+} catch (_: Exception) {
+    null
 }
 
 private fun softmax(logits: FloatArray): FloatArray {

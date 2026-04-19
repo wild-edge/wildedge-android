@@ -9,6 +9,19 @@ internal fun testWildEdge(): WildEdgeClient = WildEdge(
     debug = false,
 )
 
+internal fun testWildEdgeWithQueue(): Pair<WildEdgeClient, EventQueue> {
+    val queue = EventQueue()
+    val client = WildEdge(
+        noop = false,
+        queue = queue,
+        registry = ModelRegistry(),
+        consumer = null,
+        hardwareSampler = null,
+        debug = false,
+    )
+    return Pair(client, queue)
+}
+
 internal fun fakeDevice(
     deviceId: String = "test-device-id",
     deviceModel: String = "Test Device",
