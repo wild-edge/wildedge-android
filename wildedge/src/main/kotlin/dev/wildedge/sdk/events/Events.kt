@@ -301,10 +301,10 @@ fun buildInferenceEvent(
             "input_meta" to inputMeta,
             "output_meta" to outputMeta,
             "generation_config" to generationConfig,
+            "hardware" to hardware?.toMap()?.ifEmpty { null },
             "success" to success,
             "error_code" to errorCode,
         ).filterValues { it != null },
-        "hardware" to hardware?.toMap()?.ifEmpty { null },
         "__we_inference_id" to inferenceId,
     ).also { it.values.removeAll { v -> v == null } }
 }

@@ -166,7 +166,7 @@ internal class Consumer(
 
         val stale = events.takeWhile { e ->
             val queuedAt = e["__we_queued_at"] as? Long ?: now
-            (now - queuedAt) > maxEventAgeMs
+            (now - queuedAt) >= maxEventAgeMs
         }
         if (stale.isNotEmpty()) {
             val staleJson = buildBatch(device, registry.snapshot(), stale, sessionId, createdAt, lowConfidenceThreshold)
@@ -179,7 +179,7 @@ internal class Consumer(
 
         val batchJson = buildBatch(device, registry.snapshot(), events, sessionId, createdAt, lowConfidenceThreshold)
 
-        log("transmitting ${events.size} event(s)")
+        log("transmitting ${events.size} event(s), payload=$batchJson")
 
         return try {
             val response = transmitter.send(batchJson)

@@ -22,7 +22,7 @@ class ModelHandleAcceleratorTest {
 
     @Suppress("UNCHECKED_CAST")
     private fun hardwareMap(event: Map<String, Any?>): Map<String, Any?>? =
-        event["hardware"] as? Map<String, Any?>
+        (event["inference"] as? Map<String, Any?>)?.get("hardware") as? Map<String, Any?>
 
     @Test fun acceleratorActualAppearsInInferenceEvent() {
         val (handle, events) = captureHandle()
@@ -64,7 +64,7 @@ class ModelHandleAcceleratorTest {
         handle.trackInference(durationMs = 5)
 
         val event = events.first { it["event_type"] == "inference" }
-        assertNull(event["hardware"])
+        assertNull(hardwareMap(event))
     }
 
     @Test fun cpuAcceleratorAppearsInInferenceEvent() {
