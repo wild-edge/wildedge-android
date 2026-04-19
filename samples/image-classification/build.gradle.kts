@@ -7,11 +7,11 @@ plugins {
 }
 tasks.register("prepareKotlinBuildScriptModel"){}
 android {
-    namespace = "dev.wildedge.sample"
+    namespace = "dev.wildedge.sample.imageclassification"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "dev.wildedge.sample"
+        applicationId = "dev.wildedge.sample.imageclassification"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
@@ -38,7 +38,7 @@ android {
     // Option C: include examples in compilation so API breakages are caught at build time.
     sourceSets {
         named("main") {
-            kotlin.srcDir("../examples")
+            kotlin.srcDir("../../examples")
         }
     }
 }

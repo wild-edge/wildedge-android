@@ -1,10 +1,10 @@
-package dev.wildedge.sample
+package dev.wildedge.sample.imageclassification
 
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import dev.wildedge.sample.databinding.ActivityMainBinding
+import dev.wildedge.sample.imageclassification.databinding.ActivityMainBinding
 import dev.wildedge.sdk.FeedbackType
 import dev.wildedge.sdk.ModelInfo
 import dev.wildedge.sdk.WildEdge

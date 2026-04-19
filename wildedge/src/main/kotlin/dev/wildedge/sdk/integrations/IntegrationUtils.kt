@@ -15,10 +15,10 @@ internal fun inferModelId(file: File): String = file.nameWithoutExtension
 internal fun inferQuantization(file: File): String? {
     val name = file.name.lowercase()
     return when {
-        name.contains("int8") -> "int8"
-        name.contains("int4") -> "int4"
-        name.contains("float16") || name.contains("fp16") -> "f16"
-        name.contains("float32") || name.contains("fp32") -> "f32"
+        name.contains("int8") || name.contains("_q8") -> "int8"
+        name.contains("int4") || name.contains("_q4") -> "int4"
+        name.contains("float16") || name.contains("fp16") || name.contains("_f16") -> "f16"
+        name.contains("float32") || name.contains("fp32") || name.contains("_f32") -> "f32"
         else -> null
     }
 }

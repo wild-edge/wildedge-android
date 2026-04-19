@@ -20,3 +20,6 @@ captures/
 # OS
 .DS_Store
 Thumbs.db
+
+# JVM crash/heap dumps
+*.hprof
