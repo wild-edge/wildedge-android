@@ -46,6 +46,7 @@ private fun buildSampling(
         val lowConf = modelEvents.count { event ->
             @Suppress("UNCHECKED_CAST")
             val inferencePart = event["inference"] as? Map<String, Any?>
+
             @Suppress("UNCHECKED_CAST")
             val outputMeta = inferencePart?.get("output_meta") as? Map<String, Any?>
             val avgConf = (outputMeta?.get("avg_confidence") as? Number)?.toFloat()

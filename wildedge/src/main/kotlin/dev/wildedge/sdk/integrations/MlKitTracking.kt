@@ -9,7 +9,7 @@ import dev.wildedge.sdk.WildEdgeClient
 import dev.wildedge.sdk.events.DetectionOutputMeta
 import dev.wildedge.sdk.events.ImageInputMeta
 
-// modelName defaults to modelId — only override if the display name differs.
+/** Registers an ML Kit model and returns a [ModelHandle] for tracking its lifecycle. */
 fun WildEdgeClient.registerMlKitModel(
     modelId: String,
     modelName: String = modelId,
@@ -25,6 +25,12 @@ fun WildEdgeClient.registerMlKitModel(
     ),
 )
 
+/**
+ * Adds inference tracking to a [Task] by recording an event on success or failure.
+ *
+ * Attach [inputMeta] from `WildEdge.analyzeImage()` to include image quality signals.
+ * Provide [outputMetaProvider] to record top predictions and confidence scores.
+ */
 fun <T> Task<T>.trackWith(
     handle: ModelHandle,
     inputModality: InputModality = InputModality.Image,

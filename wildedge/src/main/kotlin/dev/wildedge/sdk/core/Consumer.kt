@@ -30,15 +30,20 @@ internal class Consumer(
         }
     }
     private val drainLock = ReentrantLock()
+
     @Volatile private var workerThread: Thread? = null
     private val closed = AtomicBoolean(false)
+
     @Volatile private var lastFlushAt = System.currentTimeMillis()
+
     @Volatile private var backoffMs = Config.BACKOFF_MIN_MS
 
     fun start() {
         executor.scheduleWithFixedDelay(
             ::tick,
-            0L, Config.IDLE_POLL_MS, TimeUnit.MILLISECONDS,
+            0L,
+            Config.IDLE_POLL_MS,
+            TimeUnit.MILLISECONDS,
         )
     }
 
@@ -53,6 +58,9 @@ internal class Consumer(
         } catch (_: RejectedExecutionException) {
             // If executor is already shutting down, do a best-effort inline flush.
             flushLoop(timeoutMs)
+        } catch (e: java.util.concurrent.ExecutionException) {
+            // Network or other delivery errors are best-effort; don't crash the caller.
+            log("flush failed: ${e.cause?.message ?: e.message}")
         }
     }
 

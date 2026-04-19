@@ -1,0 +1,95 @@
+build:
+  maxIssues: 0
+
+config:
+  validation: true
+  warningsAsErrors: false
+
+complexity:
+  CyclomaticComplexMethod:
+    threshold: 25
+  LongParameterList:
+    functionThreshold: 12
+    constructorThreshold: 10
+    ignoreDefaultParameters: true
+    ignoreDataClasses: true
+  LongMethod:
+    threshold: 70
+    excludes: ['**/sample/**', '**/test/**']
+
+exceptions:
+  TooGenericExceptionCaught:
+    exceptionNames:
+      - Error
+      - Exception
+      - RuntimeException
+      - Throwable
+    allowedExceptionNameRegex: "_|(ignored)"
+    excludes: ['**/sample/**', '**/test/**']
+  TooGenericExceptionThrown:
+    excludes: ['**/test/**', '**/sample/**']
+
+empty-blocks:
+  EmptyFunctionBlock:
+    ignoreOverridden: true
+
+naming:
+  MatchingDeclarationName:
+    active: false
+  InvalidPackageDeclaration:
+    active: false
+
+style:
+  ReturnCount:
+    max: 5
+  ThrowsCount:
+    max: 3
+  LoopWithTooManyJumpStatements:
+    maxJumpCount: 5
+  MagicNumber:
+    ignoreNumbers: ['-1', '0', '1', '2', '10', '100', '1000']
+    ignorePropertyDeclaration: true
+    ignoreConstantDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreAnnotation: true
+    ignoreHashCodeFunction: true
+    ignoreEnums: true
+    excludes: ['**/sample/**', '**/test/**']
+  MaxLineLength:
+    maxLineLength: 120
+  WildcardImport:
+    excludeImports: ['org.junit.Assert.*']
+
+comments:
+  UndocumentedPublicClass:
+    active: true
+    excludes: ['**/sample/**', '**/test/**']
+  UndocumentedPublicFunction:
+    active: true
+    excludes: ['**/sample/**', '**/test/**']
+  UndocumentedPublicProperty:
+    active: false
+
+coroutines:
+  active: true
+  GlobalCoroutineUsage:
+    active: true
+  RedundantSuspendModifier:
+    active: true
+  SleepInsteadOfDelay:
+    active: true
+  SuspendFunWithFlowReturnType:
+    active: true
+
+formatting:
+  active: true
+  android: true
+  autoCorrect: true
+  MaxLineLength:
+    active: false  # handled by style.MaxLineLength above
+  NoWildcardImports:
+    active: false  # covered by style.WildcardImport which supports exclusions
+  InvalidPackageDeclaration:
+    active: false  # false positive when scanning multi-module project from root
+  Filename:
+    active: false  # Kotlin extension files use + naming convention (e.g. ModelHandle+Coroutines.kt)

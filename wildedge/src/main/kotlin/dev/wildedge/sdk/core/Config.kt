@@ -10,7 +10,7 @@ internal object Config {
     const val DEFAULT_FLUSH_INTERVAL_MS = 60_000L
     const val DEFAULT_BATCH_SIZE = 10
     const val DEFAULT_MAX_QUEUE_SIZE = 200
-    const val DEFAULT_MAX_EVENT_AGE_MS = 900_000L   // 15 min
+    const val DEFAULT_MAX_EVENT_AGE_MS = 900_000L // 15 min
     const val DEFAULT_SAMPLING_INTERVAL_MS = 30_000L
     const val DEFAULT_SHUTDOWN_FLUSH_TIMEOUT_MS = 5_000L
     const val DEFAULT_DEAD_LETTER_MAX_BATCHES = 10

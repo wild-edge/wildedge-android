@@ -52,7 +52,9 @@ internal class HardwareSampler(
                 PowerManager.THERMAL_STATUS_SHUTDOWN -> "critical"
                 else -> null
             }
-        } else null
+        } else {
+            null
+        }
 
         val thermalStateRaw = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             when (pm?.currentThermalStatus) {
@@ -65,10 +67,13 @@ internal class HardwareSampler(
                 PowerManager.THERMAL_STATUS_SHUTDOWN -> "THERMAL_STATUS_SHUTDOWN"
                 else -> null
             }
-        } else null
+        } else {
+            null
+        }
 
         val batteryIntent = context.registerReceiver(
-            null, IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+            null,
+            IntentFilter(Intent.ACTION_BATTERY_CHANGED),
         )
         val batteryLevel = batteryIntent?.let {
             val level = it.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)

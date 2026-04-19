@@ -14,9 +14,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.tensorflow.lite.Interpreter
+import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.io.File
 
 class MainActivity : AppCompatActivity() {
 
@@ -34,7 +34,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (BuildConfig.WILDEDGE_DSN.isEmpty()) {
-            binding.tvStatus.text = "noop mode -- add wildedge.dsn=... to local.properties to enable reporting"
+            binding.tvStatus.text = "noop mode: add wildedge.dsn=... to local.properties to enable reporting"
         } else {
             binding.tvStatus.text = "reporting enabled"
         }
@@ -66,7 +66,7 @@ class MainActivity : AppCompatActivity() {
             ),
         )
 
-        if (true) { //!modelFile.exists()) {
+        if (!modelFile.exists()) {
             log("Downloading MobileNet V1 quant (~4 MB)...")
             val ok = downloadModel(handle, modelFile)
             if (!ok) {

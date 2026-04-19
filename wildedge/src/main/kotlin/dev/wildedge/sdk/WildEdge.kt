@@ -8,7 +8,6 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.Looper
 import android.util.Log
-import dev.wildedge.sdk.events.HardwareContext
 import dev.wildedge.sdk.events.buildMemoryWarningEvent
 import dev.wildedge.sdk.events.buildSpanEvent
 import dev.wildedge.sdk.events.isoNow
@@ -18,6 +17,11 @@ import java.util.UUID
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
+/**
+ * Live implementation of [WildEdgeClient].
+ *
+ * Create via [WildEdge.init] or [WildEdge.Builder]; interact through the [WildEdgeClient] interface.
+ */
 class WildEdge internal constructor(
     private val noop: Boolean,
     private val queue: EventQueue,
@@ -29,6 +33,7 @@ class WildEdge internal constructor(
 ) : WildEdgeClient, SpanOwner {
     private val handles = mutableMapOf<String, ModelHandle>()
     private val handlesLock = ReentrantLock()
+
     @Volatile private var closed = false
     private val activeSpan = ThreadLocal<SpanContext?>()
 
@@ -56,13 +61,15 @@ class WildEdge internal constructor(
         triggeredUnload: Boolean,
         unloadedModelId: String?,
     ) {
-        publish(buildMemoryWarningEvent(
-            level = level.value,
-            memoryAvailableBytes = memoryAvailableBytes,
-            activeModelIds = activeModelIds,
-            triggeredUnload = triggeredUnload,
-            unloadedModelId = unloadedModelId,
-        ).toMutableMap())
+        publish(
+            buildMemoryWarningEvent(
+                level = level.value,
+                memoryAvailableBytes = memoryAvailableBytes,
+                activeModelIds = activeModelIds,
+                triggeredUnload = triggeredUnload,
+                unloadedModelId = unloadedModelId,
+            ).toMutableMap()
+        )
     }
 
     override fun flush(timeoutMs: Long) {
@@ -102,6 +109,7 @@ class WildEdge internal constructor(
         block = block,
     )
 
+    @Suppress("TooGenericExceptionCaught")
     override fun <T> runSpan(
         name: String,
         traceId: String,
@@ -129,16 +137,18 @@ class WildEdge internal constructor(
             activeSpan.set(prev)
             val durationMs = System.currentTimeMillis() - startMs
             if (debug) Log.d("wildedge", "span name=$name trace=${ctx.traceId} duration=${durationMs}ms")
-            publish(buildSpanEvent(
-                traceId = ctx.traceId,
-                spanId = ctx.spanId,
-                parentSpanId = ctx.parentSpanId,
-                kind = ctx.kind.value,
-                status = ctx.status.value,
-                name = name,
-                durationMs = durationMs,
-                attributes = attributes,
-            ).toMutableMap())
+            publish(
+                buildSpanEvent(
+                    traceId = ctx.traceId,
+                    spanId = ctx.spanId,
+                    parentSpanId = ctx.parentSpanId,
+                    kind = ctx.kind.value,
+                    status = ctx.status.value,
+                    name = name,
+                    durationMs = durationMs,
+                    attributes = attributes,
+                ).toMutableMap()
+            )
         }
     }
 
@@ -146,6 +156,7 @@ class WildEdge internal constructor(
 
     // DSL builder
 
+    /** DSL builder for configuring and constructing a [WildEdgeClient]. */
     class Builder(private val context: Context) {
         var dsn: String? = System.getenv(Config.ENV_DSN)
         var appVersion: String? = detectAppVersion(context)
@@ -164,6 +175,10 @@ class WildEdge internal constructor(
         var strict: Boolean = false
         var autoTrackMemoryWarnings: Boolean = true
 
+        /**
+         * Constructs a [WildEdgeClient] from the current builder configuration.
+         * Returns a no-op client if no DSN is set.
+         */
         fun build(): WildEdgeClient {
             val dsn = dsn
             if (dsn.isNullOrBlank()) {
@@ -239,18 +254,9 @@ class WildEdge internal constructor(
                         )
                     }
                     override fun onConfigurationChanged(newConfig: Configuration) = Unit
-                    override fun onLowMemory() {
-                        val memInfo = ActivityManager.MemoryInfo()
-                        am?.getMemoryInfo(memInfo)
-                        wildEdge.trackMemoryWarning(
-                            level = MemoryWarningLevel.Critical,
-                            memoryAvailableBytes = memInfo.availMem,
-                            activeModelIds = wildEdge.handlesLock.withLock {
-                                wildEdge.handles.keys.toList()
-                            },
-                            triggeredUnload = false,
-                        )
-                    }
+
+                    @Suppress("DEPRECATION")
+                    override fun onLowMemory() = Unit
                 }
                 appContext.registerComponentCallbacks(callback)
                 wildEdge.memoryCallbackUnregister = { appContext.unregisterComponentCallbacks(callback) }
@@ -268,7 +274,9 @@ class WildEdge internal constructor(
         }
     }
 
+    /** Factory methods for [WildEdge]. */
     companion object {
+        /** Initialises the SDK with an optional [Builder] configuration block and returns a [WildEdgeClient]. */
         fun init(context: Context, block: Builder.() -> Unit = {}): WildEdgeClient =
             Builder(context).apply(block).build()
     }
@@ -290,6 +298,7 @@ private fun detectAppVersion(context: Context): String? = try {
     info.versionName
 } catch (_: Exception) { null }
 
+@Suppress("DEPRECATION")
 private fun trimMemoryLevel(level: Int): MemoryWarningLevel? = when (level) {
     ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW -> MemoryWarningLevel.Warning
     ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL -> MemoryWarningLevel.Serious

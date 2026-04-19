@@ -16,12 +16,12 @@ class PlayServicesTfliteDecoratorTest {
         var failMultiRun = false
 
         override fun run(input: Any, output: Any) {
-            if (failRun) throw IllegalStateException("run failed")
+            check(!failRun) { "run failed" }
             runCalls++
         }
 
         override fun runForMultipleInputsOutputs(inputs: Array<Any>, outputs: Map<Int, Any>) {
-            if (failMultiRun) throw IllegalArgumentException("multi run failed")
+            require(!failMultiRun) { "multi run failed" }
             runCalls++
         }
         override fun getInputTensorCount() = 1

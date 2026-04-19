@@ -5,15 +5,19 @@ on:
     branches: [ main, devel, 'release/**' ]
     paths:
       - 'wildedge/**'
+      - 'sample/**'
       - 'gradle/**'
       - 'gradle.properties'
+      - 'detekt.yml'
       - '.github/workflows/ci.yml'
   pull_request:
     branches: [ main, devel ]
     paths:
       - 'wildedge/**'
+      - 'sample/**'
       - 'gradle/**'
       - 'gradle.properties'
+      - 'detekt.yml'
       - '.github/workflows/ci.yml'
 
 jobs:
@@ -64,3 +68,27 @@ jobs:
         with:
           name: lint-results
           path: wildedge/build/reports/lint-results*.html
+
+  detekt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+
+      - name: Run detekt
+        run: ./gradlew detekt --no-daemon
+
+      - name: Upload detekt results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: detekt-results
+          path: build/reports/detekt/

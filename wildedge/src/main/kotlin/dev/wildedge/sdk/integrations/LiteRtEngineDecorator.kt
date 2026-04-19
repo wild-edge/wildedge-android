@@ -9,20 +9,28 @@ import dev.wildedge.sdk.ModelInfo
 import dev.wildedge.sdk.WildEdgeClient
 import java.io.File
 
+/**
+ * Wraps a LiteRT [Engine] to automatically record lifecycle events via [ModelHandle].
+ *
+ * Create via [WildEdgeClient.decorate] rather than constructing directly.
+ */
 class LiteRtEngineDecorator(
     private val engine: Engine,
     val handle: ModelHandle,
 ) : AutoCloseable {
 
+    /** Creates a new conversation on the underlying engine. */
     fun createConversation(config: ConversationConfig = ConversationConfig()): Conversation =
         engine.createConversation(config)
 
+    /** Records an unload event and closes the underlying engine. */
     override fun close() {
         handle.trackUnload()
         engine.close()
     }
 }
 
+/** Creates a [LiteRtEngineDecorator], inferring model metadata from [config]. */
 fun WildEdgeClient.decorate(
     engine: Engine,
     config: EngineConfig,
@@ -47,9 +55,9 @@ fun WildEdgeClient.decorate(
     return LiteRtEngineDecorator(engine, handle)
 }
 
+/** Creates a [LiteRtEngineDecorator] with explicit model metadata. */
 fun WildEdgeClient.decorate(
     engine: Engine,
-    config: EngineConfig,
     loadDurationMs: Int = 0,
     modelId: String,
     modelVersion: String = "unknown",

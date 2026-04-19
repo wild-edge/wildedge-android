@@ -7,7 +7,7 @@ import org.junit.Test
 // Reservoir is not yet extracted as a standalone class (v1 uses flat queue).
 // These tests cover the sampling envelope computed in Batch.kt.
 
-class BatchSamplingTest {
+class ReservoirTest {
 
     private fun inferenceEvent(modelId: String, avgConfidence: Float?): MutableMap<String, Any?> {
         val meta = if (avgConfidence != null) mapOf("avg_confidence" to avgConfidence) else null

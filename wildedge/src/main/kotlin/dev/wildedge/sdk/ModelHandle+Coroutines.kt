@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.flow
  * }
  * ```
  */
+@Suppress("TooGenericExceptionCaught")
 suspend fun <T> ModelHandle.trackSuspendInference(
     inputModality: InputModality? = null,
     outputModality: OutputModality? = null,
@@ -66,6 +67,7 @@ suspend fun <T> ModelHandle.trackSuspendInference(
  *     .collect { chunk -> append(chunk) }
  * ```
  */
+@Suppress("TooGenericExceptionCaught")
 fun Flow<String>.trackWith(
     handle: ModelHandle,
     inputMeta: TextInputMeta? = null,

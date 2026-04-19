@@ -35,13 +35,15 @@ internal class NoopWildEdgeClient : WildEdgeClient, SpanOwner {
         kind: SpanKind,
         attributes: Map<String, Any?>?,
         block: (SpanContext) -> T,
-    ): T = block(SpanContext(
-        traceId = traceId,
-        spanId = UUID.randomUUID().toString(),
-        parentSpanId = parentSpanId,
-        kind = kind,
-        owner = this,
-    ))
+    ): T = block(
+        SpanContext(
+            traceId = traceId,
+            spanId = UUID.randomUUID().toString(),
+            parentSpanId = parentSpanId,
+            kind = kind,
+            owner = this,
+        )
+    )
 
     override fun flush(timeoutMs: Long) = Unit
     override fun close(timeoutMs: Long) = Unit

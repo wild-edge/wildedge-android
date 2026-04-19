@@ -3,8 +3,8 @@ package dev.wildedge.sdk
 import dev.wildedge.sdk.analysis.analyzeAudio
 import org.junit.Assert.*
 import org.junit.Test
-import kotlin.math.sin
 import kotlin.math.PI
+import kotlin.math.sin
 
 class AudioAnalysisTest {
 
@@ -41,9 +41,9 @@ class AudioAnalysisTest {
 
     @Test fun sineWaveVolumeIsNegativeDb() {
         val meta = WildEdge.analyzeAudio(sineWave(sampleRate), sampleRate)
-        assertNotNull(meta.volumeDb)
-        assertTrue("expected negative dBFS", meta.volumeDb!! < 0f)
-        assertTrue("expected > -30 dBFS for loud sine", meta.volumeDb!! > -30f)
+        val volumeDb = requireNotNull(meta.volumeDb)
+        assertTrue("expected negative dBFS", volumeDb < 0f)
+        assertTrue("expected > -30 dBFS for loud sine", volumeDb > -30f)
     }
 
     @Test fun clippingDetectedWhenSaturated() {

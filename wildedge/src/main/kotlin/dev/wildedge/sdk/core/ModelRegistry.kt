@@ -1,9 +1,9 @@
 package dev.wildedge.sdk
 
+import org.json.JSONObject
 import java.io.File
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
-import org.json.JSONObject
 
 internal class ModelRegistry(private val persistFile: File? = null) {
     private val models = mutableMapOf<String, ModelInfo>()

@@ -108,7 +108,8 @@ class ModelRegistryTest {
                 "model_name": "Invalid",
                 "model_source": "local"
               }
-            }""".trimIndent(),
+            }
+            """.trimIndent(),
         )
 
         val reg = ModelRegistry(file)

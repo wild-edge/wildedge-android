@@ -9,6 +9,23 @@ import java.util.UUID
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
+/**
+ * Hardware and software context for the device running inference.
+ *
+ * @property deviceId Anonymised, project-scoped device identifier.
+ * @property deviceType Platform identifier; always "android".
+ * @property deviceModel Manufacturer and model string.
+ * @property osVersion Android OS version string.
+ * @property appVersion Host application version, if detectable.
+ * @property sdkVersion WildEdge SDK version.
+ * @property locale BCP-47 language tag of the device locale.
+ * @property timezone IANA timezone ID.
+ * @property cpuArch Primary ABI (e.g. "arm64-v8a").
+ * @property cpuCores Number of logical CPU cores.
+ * @property ramTotalBytes Total physical RAM in bytes.
+ * @property gpuModel GPU model string, if detectable.
+ * @property accelerators Hardware accelerators available on the device.
+ */
 data class DeviceInfo(
     val deviceId: String,
     val deviceType: String = "android",
@@ -37,7 +54,9 @@ data class DeviceInfo(
         "accelerators" to accelerators.map { it.value },
     ).filterValues { it != null }
 
+    /** Factory and utility methods for [DeviceInfo]. */
     companion object {
+        /** Detects device information, generating and persisting an anonymised device ID if needed. */
         fun detect(context: Context, projectSecret: String, appVersion: String?): DeviceInfo {
             val prefs = context.getSharedPreferences(Config.PREFS_NAME, Context.MODE_PRIVATE)
             var rawId = prefs.getString(Config.PREFS_DEVICE_ID, null)
@@ -64,6 +83,7 @@ data class DeviceInfo(
             )
         }
 
+        /** Clears the persisted device ID so a new one is generated on the next [detect] call. */
         fun resetDeviceId(context: Context) {
             context.getSharedPreferences(Config.PREFS_NAME, Context.MODE_PRIVATE)
                 .edit().remove(Config.PREFS_DEVICE_ID).apply()

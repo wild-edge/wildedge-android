@@ -15,6 +15,22 @@ internal fun isoNow(): String {
 
 internal fun newEventId() = UUID.randomUUID().toString()
 
+/**
+ * Snapshot of device hardware state at inference time.
+ *
+ * All fields are optional; omit anything not available on the device.
+ *
+ * @property thermalState Normalised thermal state string (e.g. "nominal", "fair", "serious", "critical").
+ * @property thermalStateRaw Raw platform thermal status value.
+ * @property cpuTempCelsius CPU temperature in degrees Celsius.
+ * @property batteryLevel Battery charge level in the range [0.0, 1.0].
+ * @property batteryCharging Whether the device is currently charging.
+ * @property memoryAvailableBytes Available system RAM in bytes.
+ * @property cpuFreqMhz Current CPU frequency in MHz.
+ * @property cpuFreqMaxMhz Maximum CPU frequency in MHz.
+ * @property acceleratorActual Accelerator actually used for inference (may differ from requested).
+ * @property gpuBusyPercent GPU utilisation percentage.
+ */
 data class HardwareContext(
     val thermalState: String? = null,
     val thermalStateRaw: String? = null,
@@ -27,6 +43,7 @@ data class HardwareContext(
     val acceleratorActual: dev.wildedge.sdk.Accelerator? = null,
     val gpuBusyPercent: Int? = null,
 ) {
+    /** Serialises this context to a wire-format map, omitting null fields. */
     fun toMap(): Map<String, Any?> = mapOf(
         "thermal" to mapOf(
             "state" to thermalState,
@@ -43,6 +60,22 @@ data class HardwareContext(
     ).filterValues { it != null }
 }
 
+/**
+ * Image-specific input metadata for an inference event.
+ *
+ * @property width Image width in pixels.
+ * @property height Image height in pixels.
+ * @property channels Number of colour channels.
+ * @property format Pixel format (e.g. "rgb", "yuv420").
+ * @property source Origin of the image (e.g. "camera", "gallery").
+ * @property brightnessMean Mean pixel brightness, normalised to [0.0, 1.0].
+ * @property brightnessStddev Standard deviation of pixel brightness.
+ * @property brightnessBuckets Histogram bucket counts for brightness distribution.
+ * @property contrast Image contrast score.
+ * @property saturationMean Mean colour saturation.
+ * @property blurScore Blur detection score (higher = blurrier).
+ * @property noiseScore Noise detection score (higher = noisier).
+ */
 data class ImageInputMeta(
     val width: Int? = null,
     val height: Int? = null,
@@ -57,9 +90,13 @@ data class ImageInputMeta(
     val blurScore: Float? = null,
     val noiseScore: Float? = null,
 ) {
+    /** Serialises this metadata to a wire-format map, omitting null fields. */
     fun toMap(): Map<String, Any?> = buildMap {
-        put("width", width); put("height", height); put("channels", channels)
-        put("format", format); put("source", source)
+        put("width", width)
+        put("height", height)
+        put("channels", channels)
+        put("format", format)
+        put("source", source)
         val hist = mapOf(
             "brightness_mean" to brightnessMean,
             "brightness_stddev" to brightnessStddev,
@@ -73,6 +110,20 @@ data class ImageInputMeta(
     }.filterValues { it != null }
 }
 
+/**
+ * Audio-specific input metadata for an inference event.
+ *
+ * @property durationMs Clip duration in milliseconds.
+ * @property sampleRate Sample rate in Hz.
+ * @property channels Number of audio channels.
+ * @property format Audio encoding format (e.g. "pcm16", "opus").
+ * @property source Origin of the audio (e.g. "microphone", "file").
+ * @property isStreaming Whether the audio is being streamed rather than buffered.
+ * @property volumeDb RMS volume in dBFS.
+ * @property snrDb Signal-to-noise ratio in dB.
+ * @property speechRatio Fraction of the clip containing speech, in [0.0, 1.0].
+ * @property clippingDetected Whether audio clipping was detected.
+ */
 data class AudioInputMeta(
     val durationMs: Int? = null,
     val sampleRate: Int? = null,
@@ -85,6 +136,7 @@ data class AudioInputMeta(
     val speechRatio: Float? = null,
     val clippingDetected: Boolean? = null,
 ) {
+    /** Serialises this metadata to a wire-format map, omitting null fields. */
     fun toMap(): Map<String, Any?> = mapOf(
         "duration_ms" to durationMs, "sample_rate" to sampleRate,
         "channels" to channels, "format" to format, "source" to source,
@@ -94,6 +146,19 @@ data class AudioInputMeta(
     ).filterValues { it != null }
 }
 
+/**
+ * Text-specific input metadata for an inference event.
+ *
+ * @property charCount Number of characters in the input.
+ * @property wordCount Number of words in the input.
+ * @property tokenCount Number of tokens (if pre-tokenised).
+ * @property language BCP-47 language tag of the detected language.
+ * @property languageConfidence Confidence of language detection, in [0.0, 1.0].
+ * @property containsCode Whether the input contains source code.
+ * @property promptType Type of prompt (e.g. "instruction", "chat", "completion").
+ * @property turnIndex Conversation turn index, for multi-turn sessions.
+ * @property hasAttachments Whether the input includes file or image attachments.
+ */
 data class TextInputMeta(
     val charCount: Int? = null,
     val wordCount: Int? = null,
@@ -105,6 +170,7 @@ data class TextInputMeta(
     val turnIndex: Int? = null,
     val hasAttachments: Boolean? = null,
 ) {
+    /** Serialises this metadata to a wire-format map, omitting null fields. */
     fun toMap(): Map<String, Any?> = mapOf(
         "char_count" to charCount, "word_count" to wordCount,
         "token_count" to tokenCount, "language" to language,
@@ -114,13 +180,27 @@ data class TextInputMeta(
     ).filterValues { it != null }
 }
 
+/**
+ * A single ranked prediction from a detection or classification model.
+ *
+ * @property label Predicted class label.
+ * @property confidence Confidence score in [0.0, 1.0].
+ */
 data class TopPrediction(val label: String, val confidence: Float? = null)
 
+/**
+ * Output metadata for detection and classification inference events.
+ *
+ * @property numPredictions Total number of predictions returned.
+ * @property topK Ranked list of top predictions.
+ * @property avgConfidence Average confidence across all predictions.
+ */
 data class DetectionOutputMeta(
     val numPredictions: Int? = null,
     val topK: List<TopPrediction>? = null,
     val avgConfidence: Float? = null,
 ) {
+    /** Serialises this metadata to a wire-format map, omitting null fields. */
     fun toMap(): Map<String, Any?> = mapOf(
         "task" to "detection",
         "num_predictions" to numPredictions,
@@ -131,6 +211,19 @@ data class DetectionOutputMeta(
     ).filterValues { it != null }
 }
 
+/**
+ * Output metadata for text generation inference events.
+ *
+ * @property tokensIn Number of input (prompt) tokens.
+ * @property tokensOut Number of generated output tokens.
+ * @property cachedInputTokens Number of input tokens served from a KV cache.
+ * @property timeToFirstTokenMs Latency to the first generated token in milliseconds.
+ * @property tokensPerSecond Generation throughput in tokens per second.
+ * @property stopReason Reason generation stopped (e.g. "eos", "max_tokens", "stop_sequence").
+ * @property contextUsed Number of context slots consumed.
+ * @property avgTokenEntropy Mean per-token entropy of the output distribution.
+ * @property safetyTriggered Whether a safety filter was triggered during generation.
+ */
 data class GenerationOutputMeta(
     val tokensIn: Int? = null,
     val tokensOut: Int? = null,
@@ -142,6 +235,7 @@ data class GenerationOutputMeta(
     val avgTokenEntropy: Float? = null,
     val safetyTriggered: Boolean? = null,
 ) {
+    /** Serialises this metadata to a wire-format map, omitting null fields. */
     fun toMap(): Map<String, Any?> = mapOf(
         "task" to "generation",
         "tokens_in" to tokensIn, "tokens_out" to tokensOut,
@@ -154,10 +248,17 @@ data class GenerationOutputMeta(
     ).filterValues { it != null }
 }
 
+/**
+ * Output metadata for embedding inference events.
+ *
+ * @property dimensions Number of dimensions in the output embedding vector.
+ */
 data class EmbeddingOutputMeta(val dimensions: Int) {
+    /** Serialises this metadata to a wire-format map. */
     fun toMap(): Map<String, Any?> = mapOf("task" to "embedding", "dimensions" to dimensions)
 }
 
+/** Builds a wire-format inference event map. */
 fun buildInferenceEvent(
     modelId: String,
     durationMs: Int,
@@ -205,9 +306,10 @@ fun buildInferenceEvent(
         ).filterValues { it != null },
         "hardware" to hardware?.toMap()?.ifEmpty { null },
         "__we_inference_id" to inferenceId,
-    ).also { it.values.removeAll { v -> v == null } } as MutableMap<String, Any?>
+    ).also { it.values.removeAll { v -> v == null } }
 }
 
+/** Builds a wire-format model load event map. */
 fun buildModelLoadEvent(
     modelId: String,
     durationMs: Int,
@@ -233,8 +335,9 @@ fun buildModelLoadEvent(
         "threads" to threads,
         "gpu_layers" to gpuLayers,
     ).filterValues { it != null },
-).filterValues { it != null }
+)
 
+/** Builds a wire-format model unload event map. */
 fun buildModelUnloadEvent(
     modelId: String,
     durationMs: Int,
@@ -252,8 +355,9 @@ fun buildModelUnloadEvent(
         "memory_freed_bytes" to memoryFreedBytes,
         "uptime_ms" to uptimeMs,
     ).filterValues { it != null },
-).filterValues { it != null }
+)
 
+/** Builds a wire-format model download event map. */
 fun buildModelDownloadEvent(
     modelId: String,
     sourceUrl: String,
@@ -283,8 +387,9 @@ fun buildModelDownloadEvent(
         "success" to success,
         "error_code" to errorCode,
     ).filterValues { it != null },
-).filterValues { it != null }
+)
 
+/** Builds a wire-format user feedback event map. */
 fun buildFeedbackEvent(
     modelId: String,
     relatedInferenceId: String,
@@ -302,8 +407,9 @@ fun buildFeedbackEvent(
         "delay_ms" to delayMs,
         "edit_distance" to editDistance,
     ).filterValues { it != null },
-).filterValues { it != null }
+)
 
+/** Builds a wire-format error event map. */
 fun buildErrorEvent(
     modelId: String?,
     errorCode: String,
@@ -323,6 +429,7 @@ fun buildErrorEvent(
     ).filterValues { it != null },
 ).filterValues { it != null }
 
+/** Builds a wire-format distributed tracing span event map. */
 fun buildSpanEvent(
     traceId: String,
     spanId: String,
@@ -348,6 +455,7 @@ fun buildSpanEvent(
     ).filterValues { it != null },
 ).filterValues { it != null }
 
+/** Builds a wire-format memory warning event map. */
 fun buildMemoryWarningEvent(
     level: String,
     memoryAvailableBytes: Long,
