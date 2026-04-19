@@ -3,7 +3,10 @@ package dev.wildedge.sdk.integrations
 import dev.wildedge.sdk.InputModality
 import dev.wildedge.sdk.ModelHandle
 import dev.wildedge.sdk.OutputModality
+import dev.wildedge.sdk.events.ClassificationOutputMeta
+import dev.wildedge.sdk.events.TopPrediction
 import java.io.File
+import kotlin.math.exp
 
 internal fun inferModelId(file: File): String = file.nameWithoutExtension
 
@@ -24,6 +27,7 @@ internal inline fun <T> trackInferenceExecution(
     inputModality: InputModality,
     outputModality: OutputModality,
     inputMeta: Map<String, Any?>? = null,
+    noinline outputMetaProvider: (() -> Map<String, Any?>?)? = null,
     block: () -> T,
 ): T {
     val start = System.currentTimeMillis()
@@ -35,6 +39,7 @@ internal inline fun <T> trackInferenceExecution(
                 inputModality = inputModality,
                 outputModality = outputModality,
                 inputMeta = inputMeta,
+                outputMeta = outputMetaProvider?.invoke(),
             )
         }
         result
@@ -51,6 +56,49 @@ internal inline fun <T> trackInferenceExecution(
         }
         throw t
     }
+}
+
+private const val TOP_K = 5
+private const val BYTE_MAX = 255
+private const val CONFIDENCE_SCALE = 10000
+
+@Suppress("ReturnCount")
+internal fun classificationOutputMeta(
+    output: Any,
+    numClasses: Int,
+    labels: List<String>?,
+): ClassificationOutputMeta? {
+    if (numClasses <= 0) return null
+    val first = (output as? Array<*>)?.takeIf { it.isNotEmpty() }?.get(0) ?: return null
+    val probs: FloatArray = try {
+        when (first) {
+            is FloatArray -> softmax(first)
+            is ByteArray -> FloatArray(first.size) { (first[it].toInt() and BYTE_MAX) / BYTE_MAX.toFloat() }
+            else -> return null
+        }
+    } catch (_: Exception) {
+        return null
+    }
+    if (probs.size != numClasses) return null
+    val topIdx = probs.indices.sortedByDescending { probs[it] }.take(minOf(TOP_K, numClasses))
+    return ClassificationOutputMeta(
+        numPredictions = numClasses,
+        topK = topIdx.map { i ->
+            TopPrediction(
+                label = labels?.getOrNull(i) ?: i.toString(),
+                confidence = (probs[i] * CONFIDENCE_SCALE).toInt() / CONFIDENCE_SCALE.toFloat(),
+            )
+        },
+        avgConfidence = topIdx.firstOrNull()
+            ?.let { i -> (probs[i] * CONFIDENCE_SCALE).toInt() / CONFIDENCE_SCALE.toFloat() },
+    )
+}
+
+private fun softmax(logits: FloatArray): FloatArray {
+    val max = logits.max()
+    val exps = FloatArray(logits.size) { exp((logits[it] - max).toDouble()).toFloat() }
+    val sum = exps.sum()
+    return FloatArray(exps.size) { exps[it] / sum }
 }
 
 private fun Throwable.toErrorCode(): String {

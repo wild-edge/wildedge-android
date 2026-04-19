@@ -20,6 +20,7 @@ class TFLiteDecorator(
     modelVersion: String = "unknown",
     quantization: String? = null,
     accelerator: dev.wildedge.sdk.Accelerator? = null,
+    private val labels: List<String>? = null,
 ) : AutoCloseable {
 
     val handle = wildEdge.registerModel(
@@ -33,13 +34,22 @@ class TFLiteDecorator(
         ),
     ).also { it.acceleratorActual = accelerator }
 
+    private val numClasses: Int = try {
+        interpreter.getOutputTensor(0).shape().last()
+    } catch (_: Exception) {
+        0
+    }
+
+    private val outputModality = if (numClasses > 0) OutputModality.Classification else OutputModality.Tensor
+
     /** Runs inference on a single input tensor, recording an inference event. */
     fun run(input: Any, output: Any, inputMeta: ImageInputMeta? = null) {
         trackInferenceExecution(
             handle = handle,
             inputModality = if (inputMeta != null) InputModality.Image else InputModality.Tensor,
-            outputModality = OutputModality.Tensor,
-            inputMeta = inputMeta?.toMap()
+            outputModality = outputModality,
+            inputMeta = inputMeta?.toMap(),
+            outputMetaProvider = { classificationOutputMeta(output, numClasses, labels)?.toMap() },
         ) {
             interpreter.run(input, output)
         }
@@ -54,8 +64,9 @@ class TFLiteDecorator(
         trackInferenceExecution(
             handle = handle,
             inputModality = if (inputMeta != null) InputModality.Image else InputModality.Tensor,
-            outputModality = OutputModality.Tensor,
-            inputMeta = inputMeta?.toMap()
+            outputModality = outputModality,
+            inputMeta = inputMeta?.toMap(),
+            outputMetaProvider = { outputs[0]?.let { classificationOutputMeta(it, numClasses, labels)?.toMap() } },
         ) {
             interpreter.runForMultipleInputsOutputs(inputs, outputs)
         }
@@ -83,6 +94,7 @@ fun WildEdgeClient.decorate(
     modelFile: File,
     modelVersion: String = "unknown",
     accelerator: dev.wildedge.sdk.Accelerator? = null,
+    labels: List<String>? = null,
 ): TFLiteDecorator = TFLiteDecorator(
     interpreter,
     this,
@@ -90,6 +102,7 @@ fun WildEdgeClient.decorate(
     modelVersion = modelVersion,
     quantization = inferQuantization(modelFile),
     accelerator = accelerator,
+    labels = labels,
 )
 
 /** Creates a [TFLiteDecorator] with explicit model metadata. */
@@ -99,4 +112,5 @@ fun WildEdgeClient.decorate(
     modelVersion: String = "unknown",
     quantization: String? = null,
     accelerator: dev.wildedge.sdk.Accelerator? = null,
-): TFLiteDecorator = TFLiteDecorator(interpreter, this, modelId, modelVersion, quantization, accelerator)
+    labels: List<String>? = null,
+): TFLiteDecorator = TFLiteDecorator(interpreter, this, modelId, modelVersion, quantization, accelerator, labels)
