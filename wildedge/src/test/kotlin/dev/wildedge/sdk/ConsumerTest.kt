@@ -177,6 +177,14 @@ class ConsumerTest {
         assertTrue("dead letter should exist", deadDir.listFiles()?.isNotEmpty() == true)
     }
 
+    @Test fun flushDoesNotThrowWhenServerUnreachable() {
+        server.shutdown() // make the endpoint unreachable
+        val queue = EventQueue()
+        val consumer = makeConsumer(queue)
+        queue.add(buildInferenceEvent("m1", 10))
+        consumer.flush(timeoutMs = 3000) // must not throw
+    }
+
     @Test fun flushAsyncReturnsQuicklyOnSlowNetwork() {
         server.enqueue(
             accepted()

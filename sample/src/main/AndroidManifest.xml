@@ -7,7 +7,8 @@
         android:label="WildEdge Sample"
         android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
         android:allowBackup="false"
-        android:supportsRtl="true">
+        android:supportsRtl="true"
+        android:networkSecurityConfig="@xml/network_security_config">
 
         <activity
             android:name=".MainActivity"

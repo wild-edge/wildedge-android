@@ -7,10 +7,10 @@ import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 
-// MobileNet V1 1.0 224 quant from the TensorFlow model repository (~4 MB).
+// MobileNet V1 1.0 224 quant from the Google Coral test data repository (~4 MB).
 // Swap for any .tflite classification model that expects [1, 224, 224, 3] uint8 input.
 const val MODEL_URL =
-    "https://drive.usercontent.google.com/download?id=1xUQklFyuYFV_ZsuO8Rskc52xsuSPZCip&export=download&authuser=0"
+    "https://github.com/google-coral/test_data/raw/master/mobilenet_v1_1.0_224_quant.tflite"
 
 suspend fun downloadModel(handle: ModelHandle, dest: File): Boolean =
     withContext(Dispatchers.IO) {

@@ -58,6 +58,9 @@ internal class Consumer(
         } catch (_: RejectedExecutionException) {
             // If executor is already shutting down, do a best-effort inline flush.
             flushLoop(timeoutMs)
+        } catch (e: java.util.concurrent.ExecutionException) {
+            // Network or other delivery errors are best-effort; don't crash the caller.
+            log("flush failed: ${e.cause?.message ?: e.message}")
         }
     }
 
