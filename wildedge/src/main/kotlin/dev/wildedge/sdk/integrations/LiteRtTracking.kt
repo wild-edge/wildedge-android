@@ -84,6 +84,8 @@ fun MessageCallback.trackWith(
     inputMeta: TextInputMeta? = null,
     inputModality: InputModality = InputModality.Text,
     tokenizer: ((String) -> Int)? = null,
+    runId: String? = null,
+    agentId: String? = null,
 ): MessageCallback {
     val start = System.currentTimeMillis()
     var firstTokenAt: Long? = null
@@ -117,6 +119,8 @@ fun MessageCallback.trackWith(
                     timeToFirstTokenMs = firstTokenAt?.let { (it - start).toInt() },
                     tokensPerSecond = if (durationMs > 0) tokensOut * 1000f / durationMs else null,
                 ).toMap(),
+                runId = runId,
+                agentId = agentId,
             )
             delegate.onDone()
         }

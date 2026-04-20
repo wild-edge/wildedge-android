@@ -41,7 +41,7 @@ class CoroutinesExample(context: Context) {
         }
 
     // Flow<String>.trackWith captures TTFT, token counts, and tokens/sec automatically.
-    // Collect the returned flow as normal — the tracking event fires when it completes.
+    // Collect the returned flow as normal. The tracking event fires when it completes.
     fun streamResponse(prompt: String): Flow<String> {
         val inputMeta = WildEdge.analyzeText(prompt)
         return buildLlmFlow(prompt).trackWith(llmHandle, inputMeta = inputMeta)

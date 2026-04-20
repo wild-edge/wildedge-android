@@ -7,11 +7,11 @@ plugins {
 }
 tasks.register("prepareKotlinBuildScriptModel"){}
 android {
-    namespace = "dev.wildedge.sample.ondevicellm"
+    namespace = "dev.wildedge.sample.localllm"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "dev.wildedge.sample.ondevicellm"
+        applicationId = "dev.wildedge.sample.localllm"
         minSdk = 24
         targetSdk = 35
         versionCode = 1

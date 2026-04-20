@@ -4,7 +4,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-        android:label="WildEdge — On-Device LLM"
+        android:label="WildEdge — Local LLM Agent"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar"
         android:allowBackup="false"
         android:supportsRtl="true"

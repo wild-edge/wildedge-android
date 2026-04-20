@@ -462,6 +462,8 @@ fun buildSpanEvent(
     name: String,
     durationMs: Long,
     attributes: Map<String, Any?>? = null,
+    runId: String? = null,
+    agentId: String? = null,
 ): Map<String, Any?> = mapOf(
     "event_id" to newEventId(),
     "event_type" to "span",
@@ -469,6 +471,8 @@ fun buildSpanEvent(
     "trace_id" to traceId,
     "span_id" to spanId,
     "parent_span_id" to parentSpanId,
+    "run_id" to runId,
+    "agent_id" to agentId,
     "span" to mapOf(
         "kind" to kind,
         "status" to status,

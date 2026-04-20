@@ -1,4 +1,4 @@
-package dev.wildedge.sample.ondevicellm
+package dev.wildedge.sample.localllm
 
 import dev.wildedge.sdk.ModelHandle
 import kotlinx.coroutines.Dispatchers
@@ -7,12 +7,12 @@ import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 
-// Default: Qwen2.5 0.5B Instruct — int8, ~547 MB. Apache 2.0, no login required.
+// Default: Qwen2.5 0.5B Instruct, int8, ~547 MB. Apache 2.0, no login required.
 // Swap for any LiteRT LM .task model; set hf.token in local.properties for gated models.
 const val MODEL_URL =
     "https://huggingface.co/litert-community/Qwen2.5-0.5B-Instruct/resolve/main/Qwen2.5-0.5B-Instruct_multi-prefill-seq_q8_ekv1280.task"
 
-// Larger alternative: Qwen2.5 1.5B Instruct — int8, ~1.6 GB. More capable, same licence.
+// Larger alternative: Qwen2.5 1.5B Instruct, int8, ~1.6 GB. More capable, same licence.
 // const val MODEL_URL =
 //     "https://huggingface.co/litert-community/Qwen2.5-1.5B-Instruct/resolve/main/Qwen2.5-1.5B-Instruct_multi-prefill-seq_q8_ekv1280.task"
 

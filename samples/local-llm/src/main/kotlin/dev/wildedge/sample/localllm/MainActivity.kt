@@ -1,4 +1,4 @@
-package dev.wildedge.sample.ondevicellm
+package dev.wildedge.sample.localllm
 
 import android.os.Bundle
 import android.view.View
@@ -10,7 +10,7 @@ import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
 import com.google.ai.edge.litertlm.Message
 import com.google.ai.edge.litertlm.MessageCallback
-import dev.wildedge.sample.ondevicellm.databinding.ActivityMainBinding
+import dev.wildedge.sample.localllm.databinding.ActivityMainBinding
 import dev.wildedge.sdk.FeedbackType
 import dev.wildedge.sdk.WildEdge
 import dev.wildedge.sdk.WildEdgeClient
@@ -102,7 +102,7 @@ class MainActivity : AppCompatActivity() {
         result.onSuccess { decorator ->
             engineDecorator = decorator
             conversation = decorator.createConversation()
-            setStatus(if (BuildConfig.WILDEDGE_DSN.isEmpty()) "noop mode — model ready" else "reporting enabled — model ready")
+            setStatus(if (BuildConfig.WILDEDGE_DSN.isEmpty()) "noop mode, model ready" else "reporting enabled, model ready")
             setInputEnabled(true)
             binding.etPrompt.requestFocus()
         }.onFailure { e ->
