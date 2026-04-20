@@ -19,6 +19,7 @@ On-device ML inference monitoring for Android. Tracks latency, confidence, drift
 | [image-classification](samples/image-classification) | TFLite image classifier with inference tracking and feedback |
 | [local-llm](samples/local-llm) | On-device LLM chat using LiteRT with token metrics |
 | [local-llm-agent](samples/local-llm-agent) | LLM agent with tool calling, session spans, and per-turn tracing |
+| [cloud-llm](samples/cloud-llm) | Streaming travel itinerary generator using Google AI (Gemini) with TTFT and token tracking |
 
 To run any sample on a device or emulator:
 
@@ -33,6 +34,11 @@ To run any sample on a device or emulator:
    ./gradlew :samples:image-classification:installDebug
    ./gradlew :samples:local-llm:installDebug
    ./gradlew :samples:local-llm-agent:installDebug
+   ./gradlew :samples:cloud-llm:installDebug
+   ```
+   The `cloud-llm` sample also requires a Google AI API key (free at https://aistudio.google.com):
+   ```
+   google.ai.api.key=AIza...
    ```
 
 Without a DSN the samples run in noop mode: all tracking calls work, events are discarded locally.

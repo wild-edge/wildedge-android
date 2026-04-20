@@ -23,6 +23,7 @@ tflite-gpu = { group = "org.tensorflow", name = "tensorflow-lite-gpu", version =
 tflite-play-services = { group = "com.google.android.gms", name = "play-services-tflite-java", version = "16.4.0" }
 onnxruntime = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version = "1.17.3" }
 litertlm = { group = "com.google.ai.edge.litertlm", name = "litertlm-android", version = "0.10.0" }
+googleai = { group = "com.google.ai.client.generativeai", name = "generativeai", version = "0.9.0" }
 mlkit-face = { group = "com.google.mlkit", name = "face-detection", version = "16.1.7" }
 detekt-formatting = { group = "io.gitlab.arturbosch.detekt", name = "detekt-formatting", version.ref = "detekt" }
 
