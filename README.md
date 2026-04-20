@@ -12,22 +12,30 @@ On-device ML inference monitoring for Android. Tracks latency, confidence, drift
 
 > **Pre-release:** API is unstable until v1.0.
 
-## Try it
+## Samples
 
-Run the sample app on a device or emulator to see the SDK in action:
+| Sample | What it shows |
+|---|---|
+| [image-classification](samples/image-classification) | TFLite image classifier with inference tracking and feedback |
+| [local-llm](samples/local-llm) | On-device LLM chat using LiteRT with token metrics |
+| [local-llm-agent](samples/local-llm-agent) | LLM agent with tool calling, session spans, and per-turn tracing |
+
+To run any sample on a device or emulator:
 
 1. Connect a device or start an emulator
 2. Copy and fill in your config:
    ```bash
    cp local.properties.example local.properties
-   # set sdk.dir to your Android SDK path and add your DSN
+   # set sdk.dir to your Android SDK path and optionally add your DSN
    ```
-3. Install and launch:
+3. Install and launch (replace `image-classification` with the sample you want):
    ```bash
-   ./gradlew :sample:installDebug
+   ./gradlew :samples:image-classification:installDebug
+   ./gradlew :samples:local-llm:installDebug
+   ./gradlew :samples:local-llm-agent:installDebug
    ```
 
-The sample downloads MobileNet V1, runs 10 inferences, and shows results in a scrolling log. Without a DSN it runs in noop mode: all tracking calls work, events are discarded locally.
+Without a DSN the samples run in noop mode: all tracking calls work, events are discarded locally.
 
 ## Install
 
