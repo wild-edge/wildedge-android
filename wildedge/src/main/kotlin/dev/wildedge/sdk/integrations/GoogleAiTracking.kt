@@ -14,10 +14,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
 /**
- * Registers a Gemini / Google AI cloud model and returns a [ModelHandle] for tracking.
+ * Registers a Google AI (Gemini) model and returns a [ModelHandle] for tracking.
  *
- * Pass a [modelId] matching the model name you pass to [GenerativeModel]
- * (e.g. `"gemini-1.5-flash"`).
+ * Pass a [modelId] matching the model name passed to [GenerativeModel] (e.g. `"gemini-2.0-flash"`).
  */
 fun WildEdgeClient.registerGoogleAiModel(
     modelId: String,
@@ -36,11 +35,10 @@ fun WildEdgeClient.registerGoogleAiModel(
 )
 
 /**
- * Wraps a streaming [Flow]<[GenerateContentResponse]> to capture generation metrics.
+ * Wraps a [Flow]<[GenerateContentResponse]> to track generation metrics.
  *
- * Token counts are sourced from [GenerateContentResponse.usageMetadata] when available,
- * with a char-based estimate as fallback. Emits a tracking event when the flow
- * completes or errors.
+ * Token counts are read from [GenerateContentResponse.usageMetadata] on the final chunk,
+ * with a char-based estimate as fallback. A tracking event is emitted on completion or error.
  *
  * Usage:
  * ```
@@ -102,7 +100,7 @@ fun Flow<GenerateContentResponse>.trackWith(
 /**
  * Calls [GenerativeModel.generateContent] and tracks the inference event.
  *
- * Token counts are sourced from [GenerateContentResponse.usageMetadata] when available.
+ * Token counts are read from [GenerateContentResponse.usageMetadata].
  *
  * Usage:
  * ```

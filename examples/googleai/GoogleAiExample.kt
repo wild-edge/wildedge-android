@@ -26,14 +26,11 @@ class GoogleAiExample(context: Context) {
         modelFamily = "gemini",
     )
 
-    // generateContentStream returns Flow<GenerateContentResponse>.
-    // .trackWith captures TTFT, token counts from usageMetadata, and tokens/sec.
-    // Collect the returned flow as normal — the tracking event fires on completion.
+    // Streaming: tracking event fires when the flow completes.
     fun stream(prompt: String) = model.generateContentStream(prompt)
         .trackWith(handle, inputMeta = WildEdge.analyzeText(prompt))
 
-    // generateContentTracked wraps the suspend unary call.
-    // Token counts from usageMetadata are used when available.
+    // Unary: tracking event fires when the suspend call returns.
     suspend fun generate(prompt: String) = model.generateContentTracked(
         handle = handle,
         prompt = prompt,

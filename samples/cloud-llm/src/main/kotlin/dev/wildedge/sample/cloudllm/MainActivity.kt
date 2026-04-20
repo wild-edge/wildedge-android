@@ -17,17 +17,9 @@ import kotlinx.coroutines.launch
 
 private const val MODEL_NAME = "gemini-2.0-flash-lite"
 
-/**
- * Travel itinerary generator — streams a day-by-day plan from Gemini.
- *
- * Shows WildEdge value in action: every inference event sent to the backend carries
- * exact TTFT, token counts (from usageMetadata), and tokens/sec — across all users
- * and device segments, without any extra code in the app.
- *
- * Setup: add these two lines to local.properties
- *   google.ai.api.key=AIza...   (free key from https://aistudio.google.com)
- *   wildedge.dsn=https://...    (optional, omit for noop mode)
- */
+// Setup: add to local.properties
+//   google.ai.api.key=AIza...   (free key from https://aistudio.google.com)
+//   wildedge.dsn=https://...    (optional, omit for noop mode)
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
@@ -56,12 +48,11 @@ class MainActivity : AppCompatActivity() {
             modelFamily = "gemini",
         )
 
-        val ready = if (BuildConfig.GOOGLE_AI_API_KEY.isEmpty())
-            "Add google.ai.api.key to local.properties"
-        else if (BuildConfig.WILDEDGE_DSN.isEmpty())
-            "noop mode — add wildedge.dsn to local.properties to enable reporting"
-        else
-            "Ready"
+        val ready = when {
+            BuildConfig.GOOGLE_AI_API_KEY.isEmpty() -> "Add google.ai.api.key to local.properties"
+            BuildConfig.WILDEDGE_DSN.isEmpty() -> "noop mode - add wildedge.dsn to local.properties to enable reporting"
+            else -> "Ready"
+        }
         setStatus(ready)
 
         binding.btnGenerate.setOnClickListener {
@@ -81,7 +72,6 @@ class MainActivity : AppCompatActivity() {
             val prompt = buildPrompt(destination, days)
             val inputMeta = WildEdge.analyzeText(prompt)
 
-            // Live stats shown in the UI mirror what WildEdge tracks server-side.
             val start = System.currentTimeMillis()
             var firstTokenMs: Long? = null
             var charCount = 0
@@ -100,12 +90,11 @@ class MainActivity : AppCompatActivity() {
                                 charCount += chunk.length
                                 appendOutput(chunk)
 
-                                // Refresh live tok/s display every ~200 chars
                                 if (charCount % 200 < chunk.length) {
                                     val elapsedMs = System.currentTimeMillis() - start
                                     val approxTok = charCount / 4
                                     if (elapsedMs > 0) {
-                                        setStatus("Generating… ${approxTok * 1000 / elapsedMs} tok/s")
+                                        setStatus("Generating: ${approxTok * 1000 / elapsedMs} tok/s")
                                     }
                                 }
                             }
@@ -115,7 +104,7 @@ class MainActivity : AppCompatActivity() {
                     val approxTok = charCount / 4
                     val secs = elapsedMs / 1000f
                     val tokPerSec = if (elapsedMs > 0) approxTok * 1000 / elapsedMs else 0
-                    setStatus("Done — ~$approxTok tokens · ${String.format("%.1f", secs)}s · ${tokPerSec} tok/s")
+                    setStatus("Done: ~$approxTok tokens, ${String.format("%.1f", secs)}s, $tokPerSec tok/s")
                 } catch (e: Exception) {
                     setStatus("Error: ${e.message}")
                 } finally {
@@ -128,16 +117,9 @@ class MainActivity : AppCompatActivity() {
     private fun buildPrompt(destination: String, days: Int): String {
         val dayLabel = if (days == 1) "1-day" else "$days-day"
         return """
-            Write a detailed $dayLabel travel itinerary for $destination.
-
-            Format each day as:
-            ## Day N — [theme or neighbourhood]
-            **Morning:** ...
-            **Afternoon:** ...
-            **Evening:** ...
-
-            Include specific venue names, local food recommendations, and one practical tip per day.
-            Write naturally, as if advising a friend.
+            Write a $dayLabel travel itinerary for $destination.
+            For each day include morning, afternoon, and evening sections.
+            Include specific venue names, local food tips, and one practical note per day.
         """.trimIndent()
     }
 
