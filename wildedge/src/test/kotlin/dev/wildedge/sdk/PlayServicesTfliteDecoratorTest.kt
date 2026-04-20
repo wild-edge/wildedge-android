@@ -8,7 +8,7 @@ import org.tensorflow.lite.InterpreterApi
 
 class PlayServicesTfliteDecoratorTest {
 
-    // Minimal fake — no native code, just records calls
+    // Minimal fake, no native code, just records calls
     private class FakeInterpreter : InterpreterApi {
         var runCalls = 0
         var closedCalled = false

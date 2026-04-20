@@ -8,11 +8,7 @@ import dev.wildedge.sdk.events.buildModelDownloadEvent
 import dev.wildedge.sdk.events.buildModelLoadEvent
 import dev.wildedge.sdk.events.buildModelUnloadEvent
 
-/**
- * Handle for a registered model; use its `track*` functions to record lifecycle and inference events.
- *
- * Obtain via [WildEdgeClient.registerModel].
- */
+/** Tracks lifecycle and inference events for a registered model. Obtain via [WildEdgeClient.registerModel]. */
 class ModelHandle internal constructor(
     val modelId: String,
     val info: ModelInfo,
@@ -100,12 +96,7 @@ class ModelHandle internal constructor(
         )
     }
 
-    /**
-     * Records an inference event and returns the generated inference ID.
-     *
-     * Hardware context is automatically captured from the background sampler unless [hardware] is provided.
-     * Trace context is propagated from the enclosing [WildEdgeClient.trace] span when present.
-     */
+    /** Records an inference event and returns its ID. */
     fun trackInference(
         durationMs: Int,
         inputModality: InputModality? = null,

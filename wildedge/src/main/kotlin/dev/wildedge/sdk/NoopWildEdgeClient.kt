@@ -18,14 +18,39 @@ internal class NoopWildEdgeClient : WildEdgeClient, SpanOwner {
         name: String,
         kind: SpanKind,
         attributes: Map<String, Any?>?,
+        parent: SpanContext?,
+        runId: String?,
+        agentId: String?,
         block: (SpanContext) -> T,
     ): T = runSpan(
         name = name,
-        traceId = UUID.randomUUID().toString(),
-        parentSpanId = null,
+        traceId = parent?.traceId ?: UUID.randomUUID().toString(),
+        parentSpanId = parent?.spanId,
         kind = kind,
         attributes = attributes,
+        runId = runId ?: parent?.runId,
+        agentId = agentId ?: parent?.agentId,
         block = block,
+    )
+
+    override fun openSpan(
+        name: String,
+        kind: SpanKind,
+        attributes: Map<String, Any?>?,
+        parent: SpanContext?,
+        runId: String?,
+        agentId: String?,
+    ): Span = Span(
+        SpanContext(
+            traceId = parent?.traceId ?: UUID.randomUUID().toString(),
+            spanId = UUID.randomUUID().toString(),
+            parentSpanId = parent?.spanId,
+            kind = kind,
+            runId = runId ?: parent?.runId,
+            agentId = agentId ?: parent?.agentId,
+            owner = this,
+        ),
+        onClose = { _, _ -> },
     )
 
     override fun <T> runSpan(
@@ -34,6 +59,8 @@ internal class NoopWildEdgeClient : WildEdgeClient, SpanOwner {
         parentSpanId: String?,
         kind: SpanKind,
         attributes: Map<String, Any?>?,
+        runId: String?,
+        agentId: String?,
         block: (SpanContext) -> T,
     ): T = block(
         SpanContext(
@@ -41,6 +68,8 @@ internal class NoopWildEdgeClient : WildEdgeClient, SpanOwner {
             spanId = UUID.randomUUID().toString(),
             parentSpanId = parentSpanId,
             kind = kind,
+            runId = runId,
+            agentId = agentId,
             owner = this,
         )
     )

@@ -64,7 +64,7 @@ fun WildEdge.Companion.analyzeImage(
     val buckets = IntArray(BRIGHTNESS_BUCKET_COUNT)
     for (l in luminances) buckets[minOf((l * BRIGHTNESS_BUCKET_COUNT).toInt(), BRIGHTNESS_BUCKET_COUNT - 1)]++
 
-    // Laplacian variance — proxy for sharpness. High = sharp, low = blurry.
+    // Laplacian variance: proxy for sharpness. High = sharp, low = blurry.
     val blurScore = if (width > 2 * sampleStep && height > 2 * sampleStep) {
         val lapValues = mutableListOf<Float>()
         for (y in sampleStep until height - sampleStep step sampleStep) {
@@ -82,7 +82,7 @@ fun WildEdge.Companion.analyzeImage(
         null
     }
 
-    // Variance of neighbor differences — high = noisy.
+    // Variance of neighbor differences, high = noisy.
     val noiseScore = if (width > sampleStep && height > sampleStep) {
         val diffs = mutableListOf<Float>()
         for (y in 0 until height - sampleStep step sampleStep) {

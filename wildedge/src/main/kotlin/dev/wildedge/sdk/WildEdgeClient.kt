@@ -19,8 +19,26 @@ interface WildEdgeClient {
         name: String,
         kind: SpanKind = SpanKind.Custom,
         attributes: Map<String, Any?>? = null,
+        parent: SpanContext? = null,
+        runId: String? = null,
+        agentId: String? = null,
         block: (SpanContext) -> T,
     ): T
+
+    /**
+     * Opens a span that must be closed manually via [Span.close].
+     *
+     * Use this when the span needs to outlast a single call frame, e.g. a session span.
+     * For everything else, prefer [trace].
+     */
+    fun openSpan(
+        name: String,
+        kind: SpanKind = SpanKind.Custom,
+        attributes: Map<String, Any?>? = null,
+        parent: SpanContext? = null,
+        runId: String? = null,
+        agentId: String? = null,
+    ): Span
 
     /** Flushes buffered events to the backend, waiting up to [timeoutMs]. */
     fun flush(timeoutMs: Long = Config.DEFAULT_SHUTDOWN_FLUSH_TIMEOUT_MS)

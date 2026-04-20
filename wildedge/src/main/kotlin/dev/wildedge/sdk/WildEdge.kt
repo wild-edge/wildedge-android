@@ -103,15 +103,58 @@ class WildEdge internal constructor(
         name: String,
         kind: SpanKind,
         attributes: Map<String, Any?>?,
+        parent: SpanContext?,
+        runId: String?,
+        agentId: String?,
         block: (SpanContext) -> T,
     ): T = runSpan(
         name = name,
-        traceId = UUID.randomUUID().toString(),
-        parentSpanId = null,
+        traceId = parent?.traceId ?: UUID.randomUUID().toString(),
+        parentSpanId = parent?.spanId,
         kind = kind,
         attributes = attributes,
+        runId = runId ?: parent?.runId,
+        agentId = agentId ?: parent?.agentId,
         block = block,
     )
+
+    override fun openSpan(
+        name: String,
+        kind: SpanKind,
+        attributes: Map<String, Any?>?,
+        parent: SpanContext?,
+        runId: String?,
+        agentId: String?,
+    ): Span {
+        val resolvedRunId = runId ?: parent?.runId
+        val resolvedAgentId = agentId ?: parent?.agentId
+        val ctx = SpanContext(
+            traceId = parent?.traceId ?: UUID.randomUUID().toString(),
+            spanId = UUID.randomUUID().toString(),
+            parentSpanId = parent?.spanId,
+            kind = kind,
+            runId = resolvedRunId,
+            agentId = resolvedAgentId,
+            owner = this,
+        )
+        return Span(ctx) { spanCtx, durationMs ->
+            if (debug) Log.d("wildedge", "span name=$name trace=${spanCtx.traceId} duration=${durationMs}ms")
+            publish(
+                buildSpanEvent(
+                    traceId = spanCtx.traceId,
+                    spanId = spanCtx.spanId,
+                    parentSpanId = spanCtx.parentSpanId,
+                    kind = spanCtx.kind.value,
+                    status = spanCtx.status.value,
+                    name = name,
+                    durationMs = durationMs,
+                    attributes = attributes,
+                    runId = spanCtx.runId,
+                    agentId = spanCtx.agentId,
+                ).toMutableMap()
+            )
+        }
+    }
 
     @Suppress("TooGenericExceptionCaught")
     override fun <T> runSpan(
@@ -120,6 +163,8 @@ class WildEdge internal constructor(
         parentSpanId: String?,
         kind: SpanKind,
         attributes: Map<String, Any?>?,
+        runId: String?,
+        agentId: String?,
         block: (SpanContext) -> T,
     ): T {
         val ctx = SpanContext(
@@ -127,6 +172,8 @@ class WildEdge internal constructor(
             spanId = UUID.randomUUID().toString(),
             parentSpanId = parentSpanId,
             kind = kind,
+            runId = runId,
+            agentId = agentId,
             owner = this,
         )
         val prev = activeSpan.get()
@@ -151,6 +198,8 @@ class WildEdge internal constructor(
                     name = name,
                     durationMs = durationMs,
                     attributes = attributes,
+                    runId = ctx.runId,
+                    agentId = ctx.agentId,
                 ).toMutableMap()
             )
         }

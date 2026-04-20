@@ -30,7 +30,7 @@ internal class ModelRegistry(private val persistFile: File? = null) {
             val text = file.readText()
             parseRegistry(text)
         } catch (_: Exception) {
-            // Corrupt registry — start fresh.
+            // Corrupt registry, start fresh.
         }
     }
 

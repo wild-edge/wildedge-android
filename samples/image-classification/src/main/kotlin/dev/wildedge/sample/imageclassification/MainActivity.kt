@@ -123,28 +123,24 @@ class MainActivity : AppCompatActivity() {
 
         log("Running ${testImages.size} inferences...")
         val lines = withContext(Dispatchers.Default) {
-            wildEdge.trace("demo-batch") { trace ->
-                testImages.map { (name, rgb) ->
-                    trace.span("inference-$name") {
-                        val inputSize = inputHeight * inputWidth * inputChannels
-                        val input = ByteBuffer.allocateDirect(inputSize).order(ByteOrder.nativeOrder())
-                        repeat(inputHeight * inputWidth) {
-                            input.put(rgb.first.toByte())
-                            input.put(rgb.second.toByte())
-                            input.put(rgb.third.toByte())
-                        }
-                        input.rewind()
-
-                        val output = Array(1) { ByteArray(outputClasses) }
-                        decorator.run(input, output)
-                        "  $name"
-                    }
+            testImages.map { (name, rgb) ->
+                val inputSize = inputHeight * inputWidth * inputChannels
+                val input = ByteBuffer.allocateDirect(inputSize).order(ByteOrder.nativeOrder())
+                repeat(inputHeight * inputWidth) {
+                    input.put(rgb.first.toByte())
+                    input.put(rgb.second.toByte())
+                    input.put(rgb.third.toByte())
                 }
+                input.rewind()
+
+                val output = Array(1) { ByteArray(outputClasses) }
+                decorator.run(input, output)
+                "  $name"
             }
         }
         lines.forEach { log(it) }
 
-        // Simulate user accepting the top result — links to the last inference automatically.
+        // Simulate user accepting the top result, links to the last inference automatically.
         handle.trackFeedback(FeedbackType.Accepted)
         log("Tracked feedback: accepted")
 

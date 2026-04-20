@@ -70,7 +70,7 @@ class ImageAnalysisTest {
     }
 
     @Test fun checkerboardHasHighBlurScore() {
-        // Checkerboard has sharp edges — high Laplacian variance
+        // Checkerboard has sharp edges, high Laplacian variance
         val meta = WildEdge.analyzeImage(checkerboard(40), sampleStep = 1)
         assertNotNull(meta.blurScore)
         assertTrue("sharp image should have high blur score", meta.blurScore!! > 0f)

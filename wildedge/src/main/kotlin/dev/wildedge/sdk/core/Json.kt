@@ -1,6 +1,6 @@
 package dev.wildedge.sdk
 
-// Minimal JSON serializer — no external dependencies.
+// Minimal JSON serializer, no external dependencies.
 // Only handles Map<String, Any?>, List<Any?>, String, Number, Boolean, null.
 
 internal fun Map<String, Any?>.toJson(): String = buildString {
