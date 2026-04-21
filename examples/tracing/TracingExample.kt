@@ -2,6 +2,7 @@ package examples.tracing
 
 import dev.wildedge.sdk.ModelInfo
 import dev.wildedge.sdk.WildEdge
+import dev.wildedge.sdk.trackInference
 
 // Assumes WildEdge.init() has already run (manifest meta-data or Application.onCreate()).
 class TracingExample {
