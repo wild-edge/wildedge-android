@@ -18,6 +18,58 @@ class CoroutinesTrackingTest {
         return handle to events
     }
 
+    // --- trackInference (block) ---
+
+    @Test fun blockTrackingEmitsInferenceEvent() {
+        val (handle, events) = captureHandle()
+        handle.trackInference { "result" }
+        assertEquals(1, events.count { it["event_type"] == "inference" })
+    }
+
+    @Test fun blockTrackingReturnsBlockResult() {
+        val (handle, _) = captureHandle()
+        val result = handle.trackInference { 42 }
+        assertEquals(42, result)
+    }
+
+    @Test fun blockTrackingRecordsSuccessTrue() {
+        val (handle, events) = captureHandle()
+        handle.trackInference { Unit }
+        val inference = events.first { it["event_type"] == "inference" }
+        @Suppress("UNCHECKED_CAST")
+        assertEquals(true, (inference["inference"] as Map<String, Any?>)["success"])
+    }
+
+    @Test fun blockTrackingRecordsFailureOnException() {
+        val (handle, events) = captureHandle()
+        runCatching { handle.trackInference<Unit> { throw IllegalStateException("boom") } }
+        val inference = events.first { it["event_type"] == "inference" }
+
+        @Suppress("UNCHECKED_CAST")
+        val inf = inference["inference"] as Map<String, Any?>
+        assertEquals(false, inf["success"])
+        assertEquals("IllegalStateException", inf["error_code"])
+    }
+
+    @Test fun blockTrackingRethrowsException() {
+        val (handle, _) = captureHandle()
+        val ex = runCatching {
+            handle.trackInference<Unit> { throw RuntimeException("rethrow me") }
+        }.exceptionOrNull()
+        assertNotNull(ex)
+        assertEquals("rethrow me", ex!!.message)
+    }
+
+    @Test fun blockTrackingOutputMetaExtractorReceivesResult() {
+        val (handle, events) = captureHandle()
+        handle.trackInference(outputMetaExtractor = { r: String -> mapOf("extracted" to r) }) { "hello" }
+        val inference = events.first { it["event_type"] == "inference" }
+
+        @Suppress("UNCHECKED_CAST")
+        val outputMeta = (inference["inference"] as Map<String, Any?>)["output_meta"] as Map<String, Any?>?
+        assertEquals("hello", outputMeta?.get("extracted"))
+    }
+
     // --- trackSuspendInference ---
 
     @Test fun suspendTrackingEmitsInferenceEvent() = runBlocking {

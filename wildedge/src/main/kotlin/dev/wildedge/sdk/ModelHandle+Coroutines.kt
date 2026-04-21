@@ -7,6 +7,53 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
 /**
+ * Times a blocking inference block and emits a tracking event on completion or error.
+ *
+ * Usage:
+ * ```
+ * val result = handle.trackInference { model.run(input) }
+ * ```
+ */
+@Suppress("TooGenericExceptionCaught")
+fun <T> ModelHandle.trackInference(
+    inputModality: InputModality? = null,
+    outputModality: OutputModality? = null,
+    inputMeta: Map<String, Any?>? = null,
+    outputMeta: Map<String, Any?>? = null,
+    outputMetaExtractor: ((T) -> Map<String, Any?>?)? = null,
+    traceId: String? = null,
+    parentSpanId: String? = null,
+    block: () -> T,
+): T {
+    val start = System.currentTimeMillis()
+    return try {
+        val result = block()
+        trackInference(
+            durationMs = (System.currentTimeMillis() - start).toInt(),
+            inputModality = inputModality,
+            outputModality = outputModality,
+            inputMeta = inputMeta,
+            outputMeta = outputMetaExtractor?.invoke(result) ?: outputMeta,
+            traceId = traceId,
+            parentSpanId = parentSpanId,
+        )
+        result
+    } catch (e: Exception) {
+        trackInference(
+            durationMs = (System.currentTimeMillis() - start).toInt(),
+            inputModality = inputModality,
+            outputModality = outputModality,
+            inputMeta = inputMeta,
+            success = false,
+            errorCode = e.javaClass.simpleName,
+            traceId = traceId,
+            parentSpanId = parentSpanId,
+        )
+        throw e
+    }
+}
+
+/**
  * Times a suspend inference block and emits a tracking event on completion or error.
  *
  * Usage:
