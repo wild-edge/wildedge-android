@@ -12,36 +12,33 @@ On-device ML inference monitoring for Android. Tracks latency, confidence, drift
 
 > **Pre-release:** API is unstable until v1.0.
 
-## Samples
+## Quick start
 
-| Sample | What it shows |
-|---|---|
-| [image-classification](samples/image-classification) | TFLite image classifier with inference tracking and feedback |
-| [local-llm](samples/local-llm) | On-device LLM chat using LiteRT with token metrics |
-| [local-llm-agent](samples/local-llm-agent) | LLM agent with tool calling, session spans, and per-turn tracing |
-| [cloud-llm](samples/cloud-llm) | Streaming travel itinerary generator using Google AI (Gemini) with TTFT and token tracking |
+Add your DSN to `AndroidManifest.xml`:
 
-To run any sample on a device or emulator:
+```xml
+<application ...>
+    <meta-data
+        android:name="dev.wildedge.dsn"
+        android:value="@string/wildedge_dsn" />
+</application>
+```
 
-1. Connect a device or start an emulator
-2. Copy and fill in your config:
-   ```bash
-   cp local.properties.example local.properties
-   # set sdk.dir to your Android SDK path and optionally add your DSN
-   ```
-3. Install and launch (replace `image-classification` with the sample you want):
-   ```bash
-   ./gradlew :samples:image-classification:installDebug
-   ./gradlew :samples:local-llm:installDebug
-   ./gradlew :samples:local-llm-agent:installDebug
-   ./gradlew :samples:cloud-llm:installDebug
-   ```
-   The `cloud-llm` sample also requires a Google AI API key (free at https://aistudio.google.com):
-   ```
-   google.ai.api.key=AIza...
-   ```
+Then wrap your TFLite interpreter:
 
-Without a DSN the samples run in noop mode: all tracking calls work, events are discarded locally.
+```kotlin
+val wildEdge = WildEdge.getInstance()
+val interpreter = wildEdge.decorate(
+    Interpreter(modelFile, Interpreter.Options()), modelFile, modelVersion = "1.0"
+)
+
+interpreter.run(inputBuffer, outputBuffer)
+interpreter.close()
+```
+
+For other frameworks, see [Integrations](#integrations) below.
+
+No DSN? The client runs in noop mode: all calls work, events are discarded. Safe to ship in all build variants.
 
 ## Install
 
@@ -53,7 +50,7 @@ dependencies {
 }
 ```
 
-Or with a version catalog (`gradle/libs.versions.toml`):
+With a version catalog (`gradle/libs.versions.toml`):
 
 ```toml
 [versions]
@@ -73,10 +70,9 @@ dependencies {
 
 ### Option A: manifest
 
-Add to `AndroidManifest.xml` and WildEdge initializes itself before `Application.onCreate()` runs:
+WildEdge initializes itself before `Application.onCreate()` runs. Add to `AndroidManifest.xml`:
 
 ```xml
-<!-- AndroidManifest.xml -->
 <application ...>
     <meta-data
         android:name="dev.wildedge.dsn"
@@ -84,9 +80,11 @@ Add to `AndroidManifest.xml` and WildEdge initializes itself before `Application
 </application>
 ```
 
-```kotlin
-// strings.xml (keep out of source control)
-<string name="wildedge_dsn">https://&lt;secret&gt;@ingest.wildedge.dev/&lt;key&gt;</string>
+```xml
+<!-- keep out of source control -->
+<resources>
+    <string name="wildedge_dsn">https://<pubkey>@ingest.wildedge.dev/<project-id></string>
+</resources>
 ```
 
 ```kotlin
@@ -97,35 +95,35 @@ val wildEdge = WildEdge.getInstance()
 
 ```kotlin
 val wildEdge: WildEdgeClient = WildEdge.init(applicationContext) {
-    dsn = "https://<secret>@ingest.wildedge.dev/<key>" // or WILDEDGE_DSN env var
+    dsn = "https://<pubkey>@ingest.wildedge.dev/<project-id>" // or WILDEDGE_DSN env var
 }
 ```
 
-`init()` also sets the shared instance, so `WildEdge.getInstance()` works after this call.
-
-If no DSN is set, the client becomes a no-op and logs a warning. No DSN = zero overhead, so it's safe to ship in all build variants.
+`init()` sets the shared instance, so `WildEdge.getInstance()` works after this call.
 
 ## Integrations
 
 ### TFLite
 
-Pass the model `File` and `modelId`/`quantization` are inferred from the filename:
+`modelId` and `quantization` are inferred from the filename:
 
 ```kotlin
 val modelFile = File(modelPath) // e.g. "yolo_v8_int8.tflite"
-val interpreter = Interpreter(modelFile, Interpreter.Options())
-val tracked = wildEdge.decorate(interpreter, modelFile, modelVersion = "8.0")
+val interpreter = wildEdge.decorate(
+    Interpreter(modelFile, Interpreter.Options()), modelFile, modelVersion = "8.0"
+)
 // modelId = "yolo_v8_int8", quantization = "int8"
 
-tracked.run(inputBuffer, outputBuffer)
-tracked.close()
+interpreter.run(inputBuffer, outputBuffer)
+interpreter.close()
 ```
 
-Override when you need explicit control:
+Explicit override:
 
 ```kotlin
-val tracked = wildEdge.decorate(
-    interpreter, modelId = "yolo-v8", modelVersion = "8.0", quantization = "int8"
+val interpreter = wildEdge.decorate(
+    Interpreter(modelFile, Interpreter.Options()),
+    modelId = "yolo-v8", modelVersion = "8.0", quantization = "int8"
 )
 ```
 
@@ -133,61 +131,54 @@ val tracked = wildEdge.decorate(
 
 ```kotlin
 val modelFile = File(modelPath) // e.g. "face_detector_fp16.onnx"
-val session = env.createSession(modelFile.absolutePath, OrtSession.SessionOptions())
-val tracked = wildEdge.decorate(session, modelFile, modelVersion = "1.0")
+val session = wildEdge.decorate(
+    env.createSession(modelFile.absolutePath, OrtSession.SessionOptions()),
+    modelFile, modelVersion = "1.0"
+)
 // modelId = "face_detector_fp16", quantization = "f16"
 
-val result = tracked.run(inputs)
-tracked.close()
+val result = session.run(inputs)
+session.close()
 ```
 
 ### MLKit
-
-Register a handle, then chain `.trackWith()` on any `Task<T>`:
 
 ```kotlin
 val handle = wildEdge.registerMlKitModel("face-detector", modelVersion = "16.1")
 
 faceDetector.process(image).trackWith(handle) { faces ->
     DetectionOutputMeta(numPredictions = faces.size)
-    // pass avgConfidence if your detector exposes a per-detection score
 }
 ```
 
 ### LiteRT LLM (litertlm)
-
-Wrap the `ResultListener` before passing it to `sendMessageAsync` or `runInference`:
 
 ```kotlin
 val handle = wildEdge.registerLiteRtModel(
     "gemma-3n", modelVersion = "1.0", quantization = "int4"
 )
 
-// At inference time — wrap the listener, pass inputMeta for token counts
 val inputMeta = WildEdge.analyzeText(userInput)
-val trackedListener = resultListener.trackWith(handle, inputMeta)
+val listener = resultListener.trackWith(handle, inputMeta)
 
-conversation.sendMessageAsync(contents, trackedListenerAsCallback)
+conversation.sendMessageAsync(contents, listener)
 ```
 
-Captures: total duration, time to first token, tokens/sec, estimated tokens in/out.
-
-Works identically for AICore — same `ResultListener` shape, same wrapper.
+Captures total duration, time to first token, tokens/sec, and estimated tokens in/out. Works identically for AICore.
 
 ### Play Services TFLite
 
 ```kotlin
-val interpreter = InterpreterApi.create(modelFile, InterpreterApi.Options())
-val tracked = wildEdge.decorate(interpreter, modelFile, modelVersion = "1.0")
-// or: wildEdge.decorate(interpreter, modelId = "my-model", modelVersion = "1.0")
+val interpreter = wildEdge.decorate(
+    InterpreterApi.create(modelFile, InterpreterApi.Options()),
+    modelFile, modelVersion = "1.0"
+)
 
-tracked.run(inputBuffer, outputBuffer)
-tracked.close()
+interpreter.run(inputBuffer, outputBuffer)
+interpreter.close()
 ```
 
 ### Remote models
-
-For apps that call a remote LLM API directly, register a handle with `modelFormat = "remote"` and set modalities once at registration:
 
 ```kotlin
 val handle = wildEdge.registerModel("gpt-4o-mini", ModelInfo(
@@ -204,7 +195,7 @@ val response = handle.trackSuspendInference {
 }
 ```
 
-If your API returns token usage, pass an `outputMetaExtractor` to include it:
+To include token counts from the response:
 
 ```kotlin
 val response = handle.trackSuspendInference(
@@ -219,11 +210,7 @@ val response = handle.trackSuspendInference(
 }
 ```
 
-This gives you latency, token usage, and error rates for remote calls alongside your on-device models in the same dashboard. If you call the remote model as part of a pipeline with on-device steps, wrap everything in a `trace {}` block so the events are correlated.
-
 ### Manual tracking
-
-For any other framework:
 
 ```kotlin
 val handle = wildEdge.registerModel("my-model", ModelInfo(
@@ -239,75 +226,62 @@ handle.trackLoad(durationMs = loadMs, accelerator = Accelerator.CPU, coldStart =
 
 val start = System.currentTimeMillis()
 val output = model.run(input)
-handle.trackInference(
-    durationMs = (System.currentTimeMillis() - start).toInt(),
-)
+handle.trackInference(durationMs = (System.currentTimeMillis() - start).toInt())
 
 handle.trackUnload()
+```
 
-// Optional: record user feedback linked to the last inference.
+## Feedback
+
+```kotlin
 handle.trackFeedback(FeedbackType.ThumbsUp)
-
-// Use FeedbackType.Custom for domain-specific signals.
 handle.trackFeedback(FeedbackType.Custom("hallucination"))
 ```
 
-## Feedback types
-
-`FeedbackType` is a sealed class with built-in values for common cases and an escape hatch for custom signals:
-
-| Value | Meaning |
-|---|---|
-| `FeedbackType.ThumbsUp` | User explicitly approved the result |
-| `FeedbackType.ThumbsDown` | User explicitly rejected the result |
-| `FeedbackType.Accepted` | User accepted / acted on the result without editing |
-| `FeedbackType.Edited` | User accepted but modified the result (pass `editDistance` if available) |
-| `FeedbackType.Rejected` | User dismissed or ignored the result |
-| `FeedbackType.Custom(value)` | Any domain-specific signal (e.g. `"hallucination"`, `"safety_flag"`) |
-
-`trackFeedback` automatically links to the most recent inference on that handle. Pass `relatedInferenceId` explicitly when linking to an earlier inference:
+`trackFeedback` links to the most recent inference on the handle. Pass `relatedInferenceId` to link to an earlier one:
 
 ```kotlin
 val inferenceId = handle.trackInference(durationMs = ms)
-// ... later, after user interacts ...
-handle.trackFeedback(
-    FeedbackType.Edited, relatedInferenceId = inferenceId, editDistance = 5
-)
+handle.trackFeedback(FeedbackType.Edited, relatedInferenceId = inferenceId, editDistance = 5)
 ```
+
+| Value | Meaning |
+|---|---|
+| `FeedbackType.ThumbsUp` | User approved the result |
+| `FeedbackType.ThumbsDown` | User rejected the result |
+| `FeedbackType.Accepted` | User acted on the result without editing |
+| `FeedbackType.Edited` | User accepted but modified the result |
+| `FeedbackType.Rejected` | User dismissed or ignored the result |
+| `FeedbackType.Custom(value)` | Domain-specific signal (e.g. `"hallucination"`, `"safety_flag"`) |
 
 ## Tracing
 
-Group related inferences into a trace so the server can reconstruct the full pipeline:
+Group related inferences so the server can reconstruct the full pipeline:
 
 ```kotlin
 wildEdge.trace("user-query") { trace ->
     trace.span("embed") {
         val start = System.currentTimeMillis()
         val embedding = embedModel.run(input)
-        val durationMs = (System.currentTimeMillis() - start).toInt()
-        embedHandle.trackInference(durationMs = durationMs)
+        embedHandle.trackInference(durationMs = (System.currentTimeMillis() - start).toInt())
         embedding
     }
 
     trace.span("classify") {
         val start = System.currentTimeMillis()
         val label = classifyModel.run(embedding)
-        val durationMs = (System.currentTimeMillis() - start).toInt()
-        classifyHandle.trackInference(durationMs = durationMs)
+        classifyHandle.trackInference(durationMs = (System.currentTimeMillis() - start).toInt())
         label
     }
 }
 ```
 
-- `trace {}` creates a root span and emits a `span` event with the total duration when the block returns.
+- `trace {}` creates a root span and emits a `span` event when the block returns.
 - `span {}` creates a child span linked via `parent_span_id`.
-- Any `trackInference()` call inside a `trace` or `span` block automatically picks up `trace_id` and `parent_span_id` — no manual ID threading needed.
-- Explicit `traceId`/`parentSpanId` arguments on `trackInference()` take precedence over the propagated context.
-- Both `trace` and `span` return the block result, so they compose naturally with your data flow.
+- `trackInference()` inside a `trace` or `span` block picks up `trace_id` and `parent_span_id` automatically.
+- Explicit `traceId`/`parentSpanId` arguments on `trackInference()` take precedence.
 
 ## Output metadata
-
-Pass structured output metadata to enrich analytics:
 
 ```kotlin
 handle.trackInference(
@@ -325,8 +299,8 @@ Available types: `DetectionOutputMeta`, `GenerationOutputMeta`, `EmbeddingOutput
 
 | Parameter | Default | Description |
 |---|---|---|
-| `dsn` | - | `https://<secret>@ingest.wildedge.dev/<key>` (or `WILDEDGE_DSN`) |
-| `appVersion` | auto-detected | App version string attached to every batch. Override if you use a custom version scheme. |
+| `dsn` | - | `https://<pubkey>@ingest.wildedge.dev/<project-id>` (or `WILDEDGE_DSN`) |
+| `appVersion` | auto-detected | App version string attached to every batch |
 | `batchSize` | `10` | Events per HTTP request |
 | `maxQueueSize` | `200` | Max in-memory events; oldest dropped on overflow |
 | `flushIntervalMs` | `60_000` | How often the consumer wakes to send |
@@ -338,17 +312,7 @@ Available types: `DetectionOutputMeta`, `GenerationOutputMeta`, `EmbeddingOutput
 
 ## Testing
 
-`WildEdge.init()` returns `WildEdgeClient`. Declare your field against the interface so you can substitute a no-op in tests:
-
-```kotlin
-// Production
-val client: WildEdgeClient = WildEdge.init(context) { dsn = "..." }
-
-// Tests — zero overhead, no background threads, no DSN required
-val client: WildEdgeClient = WildEdgeClient.noop()
-```
-
-The noop client executes `trace` and `span` blocks normally (so your pipeline logic runs) but discards all events. You can inject it via constructor or a DI framework:
+Declare your field against `WildEdgeClient` and inject `WildEdgeClient.noop()` in tests:
 
 ```kotlin
 class InferenceService(private val wildEdge: WildEdgeClient) {
@@ -366,15 +330,11 @@ class InferenceService(private val wildEdge: WildEdgeClient) {
 val service = InferenceService(WildEdgeClient.noop())
 ```
 
+The noop client runs `trace` and `span` blocks normally but discards all events. No background threads, no DSN required.
+
 ## Lifecycle
 
-Call `flush()` before your process exits to drain remaining events.
-`close()` is main-thread safe:
-
-- Off main thread: blocks until flush timeout, then stops background worker.
-- On main thread: flushes asynchronously to avoid ANR risk.
-
-Default shutdown flush timeout is 5 seconds.
+Call `close()` before your process exits to drain remaining events:
 
 ```kotlin
 override fun onTerminate() {
@@ -383,9 +343,11 @@ override fun onTerminate() {
 }
 ```
 
+`close()` is main-thread safe. On the main thread it flushes asynchronously; off the main thread it blocks until the flush timeout (default 5 seconds).
+
 ## AI-assisted integration
 
-Paste the prompt below into your coding agent (Claude Code, Cursor, Copilot, etc.) to get guided integration. It will scan your codebase, find all ML inference code, and wire up WildEdge with the right pattern for each framework.
+Paste the prompt below into your coding agent (Claude Code, Cursor, Copilot, etc.) to wire up WildEdge across your codebase automatically.
 
 ```
 Integrate the WildEdge Android SDK (dev.wildedge:wildedge-android) into this project.
@@ -395,14 +357,20 @@ Integrate the WildEdge Android SDK (dev.wildedge:wildedge-android) into this pro
    direct HTTP calls to remote LLM APIs (OpenAI, Gemini, etc.).
 
 2. For each one found, wrap it with the right WildEdge integration:
-   - TFLite: wildEdge.decorate(interpreter, modelFile, modelVersion = "...")
-   - ONNX: wildEdge.decorate(session, modelFile, modelVersion = "...")
-   - LiteRT: wildEdge.decorate(engine, config, modelVersion = "...")
+   - TFLite: val interpreter = wildEdge.decorate(Interpreter(modelFile, ...), modelFile, modelVersion = "...")
+   - ONNX: val session = wildEdge.decorate(env.createSession(...), modelFile, modelVersion = "...")
+   - LiteRT: val engine = wildEdge.decorate(Engine(config), config, modelVersion = "...")
    - MLKit: wildEdge.registerMlKitModel(...) and Task.trackWith(handle)
-   - Remote LLM: wildEdge.registerModel(...) and handle.trackInference(...)
-   Pass a real modelVersion string. Check the model filename, asset path, or any
-   version constant already in the code.
-   For suspend/coroutine inference code use handle.trackSuspendInference { }.
+   - Remote LLM: wildEdge.registerModel("id", ModelInfo(
+         inputModality = InputModality.Text, outputModality = OutputModality.Generation, ...))
+     Use handle.trackSuspendInference { } for suspend calls. Pass outputMetaExtractor to
+     capture token counts from the response:
+       outputMetaExtractor = { r ->
+           GenerationOutputMeta(tokensIn = r.usage.promptTokens, tokensOut = r.usage.completionTokens).toMap()
+       }
+   For decorator integrations, assign the result to the same variable name as the original
+   so call sites don't change. Pass a real modelVersion string (check the model filename,
+   asset path, or any version constant in the code).
    For streaming LLM output (Flow<String>) use flow.trackWith(handle).
 
 3. Set up WildEdge (pick one):
@@ -425,63 +393,67 @@ Integrate the WildEdge Android SDK (dev.wildedge:wildedge-android) into this pro
    WildEdge never transmits raw inputs.
 ```
 
+## Samples
+
+| Sample | What it shows |
+|---|---|
+| [image-classification](samples/image-classification) | TFLite image classifier with inference tracking and feedback |
+| [local-llm](samples/local-llm) | On-device LLM chat using LiteRT with token metrics |
+| [local-llm-agent](samples/local-llm-agent) | LLM agent with tool calling, session spans, and per-turn tracing |
+| [cloud-llm](samples/cloud-llm) | Streaming travel itinerary generator using Google AI (Gemini) with TTFT and token tracking |
+
+To run a sample:
+
+1. Connect a device or start an emulator.
+2. Copy and fill in your config:
+   ```bash
+   cp local.properties.example local.properties
+   # set sdk.dir and optionally add your DSN
+   ```
+3. Install:
+   ```bash
+   ./gradlew :samples:image-classification:installDebug
+   ./gradlew :samples:local-llm:installDebug
+   ./gradlew :samples:local-llm-agent:installDebug
+   ./gradlew :samples:cloud-llm:installDebug
+   ```
+   `cloud-llm` also requires a Google AI API key (free at https://aistudio.google.com):
+   ```
+   google.ai.api.key=AIza...
+   ```
+
+Without a DSN the samples run in noop mode.
+
 ## Development
 
-### Requirements
-
-- JDK 17+
-- Gradle 9.4+ (via wrapper — `./gradlew` downloads it automatically)
-- Android SDK with `compileSdk 35` installed
-
-### Run unit tests
+**Requirements:** JDK 17+, Android SDK with `compileSdk 35`, Gradle 9.4+ (the wrapper downloads it automatically).
 
 ```bash
+# Unit tests (JVM, no emulator needed)
 ./gradlew :wildedge:testDebugUnitTest
-```
 
-Tests run on the JVM via Robolectric — no emulator or device needed.
-
-### Run a single test class
-
-```bash
+# Single test class
 ./gradlew :wildedge:testDebugUnitTest --tests "dev.wildedge.sdk.EventQueueTest"
-```
 
-### Build the library
-
-```bash
-./gradlew :wildedge:assembleRelease
-```
-
-Output: `wildedge/build/outputs/aar/wildedge-release.aar`
-
-### Run lint
-
-```bash
+# Lint
 ./gradlew :wildedge:lint
-```
 
-### Run detekt
-
-```bash
+# Detekt
 ./gradlew detekt
-```
 
-### Publish to local Maven (for local app integration testing)
+# Build AAR
+./gradlew :wildedge:assembleRelease
+# Output: wildedge/build/outputs/aar/wildedge-release.aar
 
-```bash
+# Publish to local Maven (for local app integration testing)
 ./gradlew :wildedge:publishToMavenLocal
 ```
 
-Then in your app's `build.gradle.kts`:
+Local Maven usage:
 
 ```kotlin
 repositories { mavenLocal() }
-dependencies { implementation("dev.wildedge:wildedge-android:<version>") }
+dependencies { implementation("dev.wildedge:wildedge-android:0.1.0") }
 ```
 
-## Requirements
-
-- minSdk 24 (Android 7.0)
-- No required transitive dependencies
-- TFLite / ONNX Runtime declared as `compileOnly`; bring your own version
+**Runtime requirements:** minSdk 24 (Android 7.0), no required transitive dependencies. TFLite / ONNX Runtime are `compileOnly`; bring your own version.

@@ -20,13 +20,13 @@ class GalleryExample {
 
     private val config = EngineConfig(modelPath = "/path/to/gemma-3n_int4.bin")
 
-    private val trackedEngine = run {
+    private val engine = run {
         val start = System.currentTimeMillis()
         val engine = Engine(config).also { it.initialize() }
         wildEdge.decorate(engine, config, loadDurationMs = (System.currentTimeMillis() - start).toInt(), modelVersion = "1.0", accelerator = Accelerator.GPU)
     }
 
-    private val conversation = trackedEngine.createConversation()
+    private val conversation = engine.createConversation()
 
     fun generate(userInput: String, images: List<Bitmap>, onToken: (String) -> Unit, onDone: () -> Unit) {
         val inputModality = if (images.isNotEmpty()) InputModality.Multimodal else InputModality.Text
@@ -38,12 +38,12 @@ class GalleryExample {
                 override fun onMessage(message: Message) = onToken(message.toString())
                 override fun onDone() = onDone()
                 override fun onError(throwable: Throwable) = onDone()
-            }.trackWith(trackedEngine.handle, inputMeta, inputModality),
+            }.trackWith(engine.handle, inputMeta, inputModality),
         )
     }
 
     fun close() {
         conversation.close()
-        trackedEngine.close()
+        engine.close()
     }
 }

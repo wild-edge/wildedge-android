@@ -17,21 +17,20 @@ class OnnxExample(context: Context) {
 
     private val modelFile = File(context.filesDir, "models/face_detector_int8.onnx")
 
-    private val session = OrtEnvironment.getEnvironment().createSession(
-        modelFile.absolutePath,
-        OrtSession.SessionOptions(),
-    )
-
     // modelId inferred as "face_detector_int8", quantization inferred as "int8"
     // pass Accelerator.NNAPI if SessionOptions were configured with NNAPIExecutionProvider
-    private val tracked = wildEdge.decorate(session, modelFile, modelVersion = "1.0")
+    private val session = wildEdge.decorate(
+        OrtEnvironment.getEnvironment().createSession(modelFile.absolutePath, OrtSession.SessionOptions()),
+        modelFile,
+        modelVersion = "1.0",
+    )
 
-    fun run(bitmap: Bitmap, inputs: Map<String, OnnxTensor>) = tracked.run(
+    fun run(bitmap: Bitmap, inputs: Map<String, OnnxTensor>) = session.run(
         inputs = inputs,
         inputMeta = WildEdge.analyzeImage(bitmap),
     )
 
     fun close() {
-        tracked.close()
+        session.close()
     }
 }
