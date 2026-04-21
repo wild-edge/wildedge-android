@@ -2,6 +2,7 @@ package examples.tracing
 
 import dev.wildedge.sdk.ModelInfo
 import dev.wildedge.sdk.WildEdge
+import dev.wildedge.sdk.trackInference
 
 // Assumes WildEdge.init() has already run (manifest meta-data or Application.onCreate()).
 class TracingExample {
@@ -15,19 +16,8 @@ class TracingExample {
     // Nested span() calls set parent_span_id so the server can reconstruct the tree.
     fun runPipeline(input: ByteArray) {
         wildEdge.trace("pipeline") { trace ->
-            val embedding = trace.span("embed") {
-                val start = System.currentTimeMillis()
-                val result = runEmbedding(input)
-                embedHandle.trackInference(durationMs = (System.currentTimeMillis() - start).toInt())
-                result
-            }
-
-            trace.span("classify") {
-                val start = System.currentTimeMillis()
-                val result = runClassification(embedding)
-                classifyHandle.trackInference(durationMs = (System.currentTimeMillis() - start).toInt())
-                result
-            }
+            val embedding = trace.span("embed") { embedHandle.trackInference { runEmbedding(input) } }
+            trace.span("classify") { classifyHandle.trackInference { runClassification(embedding) } }
         }
     }
 

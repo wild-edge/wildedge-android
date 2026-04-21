@@ -223,11 +223,7 @@ val handle = wildEdge.registerModel("my-model", ModelInfo(
 ))
 
 handle.trackLoad(durationMs = loadMs, accelerator = Accelerator.CPU, coldStart = true)
-
-val start = System.currentTimeMillis()
-val output = model.run(input)
-handle.trackInference(durationMs = (System.currentTimeMillis() - start).toInt())
-
+val output = handle.trackInference { model.run(input) }
 handle.trackUnload()
 ```
 
@@ -260,19 +256,8 @@ Group related inferences so the server can reconstruct the full pipeline:
 
 ```kotlin
 wildEdge.trace("user-query") { trace ->
-    trace.span("embed") {
-        val start = System.currentTimeMillis()
-        val embedding = embedModel.run(input)
-        embedHandle.trackInference(durationMs = (System.currentTimeMillis() - start).toInt())
-        embedding
-    }
-
-    trace.span("classify") {
-        val start = System.currentTimeMillis()
-        val label = classifyModel.run(embedding)
-        classifyHandle.trackInference(durationMs = (System.currentTimeMillis() - start).toInt())
-        label
-    }
+    val embedding = trace.span("embed") { embedHandle.trackInference { embedModel.run(input) } }
+    trace.span("classify") { classifyHandle.trackInference { classifyModel.run(embedding) } }
 }
 ```
 
@@ -318,12 +303,7 @@ Declare your field against `WildEdgeClient` and inject `WildEdgeClient.noop()` i
 class InferenceService(private val wildEdge: WildEdgeClient) {
     private val handle = wildEdge.registerModel("my-model", ...)
 
-    fun run(input: ByteArray): Result {
-        val start = System.currentTimeMillis()
-        val result = model.run(input)
-        handle.trackInference(durationMs = (System.currentTimeMillis() - start).toInt())
-        return result
-    }
+    fun run(input: ByteArray): Result = handle.trackInference { model.run(input) }
 }
 
 // In tests:
