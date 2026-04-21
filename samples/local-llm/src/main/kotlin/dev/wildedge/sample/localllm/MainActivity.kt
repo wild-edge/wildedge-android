@@ -12,6 +12,9 @@ import com.google.ai.edge.litertlm.Message
 import com.google.ai.edge.litertlm.MessageCallback
 import dev.wildedge.sample.localllm.databinding.ActivityMainBinding
 import dev.wildedge.sdk.FeedbackType
+import dev.wildedge.sdk.InputModality
+import dev.wildedge.sdk.ModelInfo
+import dev.wildedge.sdk.OutputModality
 import dev.wildedge.sdk.WildEdge
 import dev.wildedge.sdk.WildEdgeClient
 import dev.wildedge.sdk.analysis.analyzeText
@@ -58,11 +61,13 @@ class MainActivity : AppCompatActivity() {
             // Register the model upfront so the download event carries the correct model ID.
             val handle = wildEdge.registerModel(
                 modelFile.nameWithoutExtension,
-                dev.wildedge.sdk.ModelInfo(
+                ModelInfo(
                     modelName = modelFile.nameWithoutExtension,
                     modelVersion = "1.0",
                     modelSource = "remote",
                     modelFormat = "litertlm",
+                    inputModality = InputModality.Text,
+                    outputModality = OutputModality.Generation,
                 ),
             )
             setStatus("Downloading model...")

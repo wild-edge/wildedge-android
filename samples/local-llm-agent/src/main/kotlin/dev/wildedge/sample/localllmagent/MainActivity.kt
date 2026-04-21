@@ -16,7 +16,9 @@ import com.google.ai.edge.litertlm.MessageCallback
 import com.google.ai.edge.litertlm.tool
 import dev.wildedge.sample.localllmagent.databinding.ActivityMainBinding
 import dev.wildedge.sdk.FeedbackType
+import dev.wildedge.sdk.InputModality
 import dev.wildedge.sdk.ModelInfo
+import dev.wildedge.sdk.OutputModality
 import dev.wildedge.sdk.Span
 import dev.wildedge.sdk.SpanKind
 import dev.wildedge.sdk.WildEdge
@@ -75,6 +77,8 @@ class MainActivity : AppCompatActivity() {
                     modelVersion = "1.0",
                     modelSource = "remote",
                     modelFormat = "litertlm",
+                    inputModality = InputModality.Text,
+                    outputModality = OutputModality.Generation,
                 ),
             )
             setStatus("Downloading model...")

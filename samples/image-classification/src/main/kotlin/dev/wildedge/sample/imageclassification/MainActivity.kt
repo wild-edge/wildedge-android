@@ -6,7 +6,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import dev.wildedge.sample.imageclassification.databinding.ActivityMainBinding
 import dev.wildedge.sdk.FeedbackType
+import dev.wildedge.sdk.InputModality
 import dev.wildedge.sdk.ModelInfo
+import dev.wildedge.sdk.OutputModality
 import dev.wildedge.sdk.WildEdge
 import dev.wildedge.sdk.WildEdgeClient
 import dev.wildedge.sdk.integrations.decorate
@@ -63,6 +65,8 @@ class MainActivity : AppCompatActivity() {
                 modelSource = "remote",
                 modelFormat = "tflite",
                 quantization = "uint8",
+                inputModality = InputModality.Image,
+                outputModality = OutputModality.Classification,
             ),
         )
 

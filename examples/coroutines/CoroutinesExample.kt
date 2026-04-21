@@ -22,21 +22,28 @@ class CoroutinesExample(context: Context) {
 
     private val classifyHandle = wildEdge.registerModel(
         "mobilenet-v3",
-        ModelInfo("MobileNet V3", "3.0", "local", "tflite", quantization = "int8"),
+        ModelInfo(
+            "MobileNet V3", "3.0", "local", "tflite",
+            quantization = "int8",
+            inputModality = InputModality.Image,
+            outputModality = OutputModality.Detection,
+        ),
     )
 
     private val llmHandle = wildEdge.registerModel(
         "gemma-3n",
-        ModelInfo("Gemma 3N", "1.0", "local", "litertlm", quantization = "int4"),
+        ModelInfo(
+            "Gemma 3N", "1.0", "local", "litertlm",
+            quantization = "int4",
+            inputModality = InputModality.Text,
+            outputModality = OutputModality.Generation,
+        ),
     )
 
     // trackSuspendInference wraps any suspend block: times it, emits the inference event,
     // and records success=false + error_code if an exception is thrown.
     suspend fun classify(input: ByteArray): String =
-        classifyHandle.trackSuspendInference(
-            inputModality = InputModality.Image,
-            outputModality = OutputModality.Detection,
-        ) {
+        classifyHandle.trackSuspendInference {
             withContext(Dispatchers.Default) { runClassifier(input) }
         }
 

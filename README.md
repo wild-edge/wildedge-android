@@ -145,7 +145,7 @@ tracked.close()
 
 ### Remote models
 
-For apps that call a remote LLM API directly, use manual tracking. The same `ModelHandle` works — set `modelFormat` to `"remote"` and `modelSource` to `"api"`:
+For apps that call a remote LLM API directly, register a handle with `modelFormat = "remote"` and set modalities once at registration:
 
 ```kotlin
 val handle = wildEdge.registerModel("gpt-4o-mini", ModelInfo(
@@ -153,19 +153,28 @@ val handle = wildEdge.registerModel("gpt-4o-mini", ModelInfo(
     modelVersion = "2024-07-18",
     modelSource = "api",
     modelFormat = "remote",
+    inputModality = InputModality.Text,
+    outputModality = OutputModality.Generation,
 ))
 
-val start = System.currentTimeMillis()
-val response = callRemoteApi(prompt)
-handle.trackInference(
-    durationMs = (System.currentTimeMillis() - start).toInt(),
-    inputModality = InputModality.Text,
-    outputModality = OutputModality.Text,
-    outputMeta = GenerationOutputMeta(
-        tokensIn = response.usage.promptTokens,
-        tokensOut = response.usage.completionTokens,
-    ).toMap(),
-)
+val response = handle.trackSuspendInference {
+    callRemoteApi(prompt)
+}
+```
+
+If your API returns token usage, pass an `outputMetaExtractor` to include it:
+
+```kotlin
+val response = handle.trackSuspendInference(
+    outputMetaExtractor = { r ->
+        GenerationOutputMeta(
+            tokensIn = r.usage.promptTokens,
+            tokensOut = r.usage.completionTokens,
+        ).toMap()
+    },
+) {
+    callRemoteApi(prompt)
+}
 ```
 
 This gives you latency, token usage, and error rates for remote calls alongside your on-device models in the same dashboard. If you call the remote model as part of a pipeline with on-device steps, wrap everything in a `trace {}` block so the events are correlated.
@@ -180,6 +189,8 @@ val handle = wildEdge.registerModel("my-model", ModelInfo(
     modelVersion = "v3",
     modelSource = "local",
     modelFormat = "custom",
+    inputModality = InputModality.Image,
+    outputModality = OutputModality.Detection,
 ))
 
 handle.trackLoad(durationMs = loadMs, accelerator = Accelerator.CPU, coldStart = true)
@@ -188,8 +199,6 @@ val start = System.currentTimeMillis()
 val output = model.run(input)
 handle.trackInference(
     durationMs = (System.currentTimeMillis() - start).toInt(),
-    inputModality = InputModality.Image,
-    outputModality = OutputModality.Detection,
 )
 
 handle.trackUnload()

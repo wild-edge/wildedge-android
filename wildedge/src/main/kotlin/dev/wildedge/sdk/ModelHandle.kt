@@ -121,8 +121,8 @@ class ModelHandle internal constructor(
         val event = buildInferenceEvent(
             modelId = modelId,
             durationMs = durationMs,
-            inputModality = inputModality?.value,
-            outputModality = outputModality?.value,
+            inputModality = (inputModality ?: info.inputModality)?.value,
+            outputModality = (outputModality ?: info.outputModality)?.value,
             success = success,
             errorCode = errorCode,
             inputMeta = inputMeta,
