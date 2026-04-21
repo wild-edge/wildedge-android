@@ -177,6 +177,27 @@ interpreter.run(inputBuffer, outputBuffer)
 interpreter.close()
 ```
 
+### Google AI (Gemini)
+
+```kotlin
+val gemini = wildEdge.decorate(
+    GenerativeModel(modelName = "gemini-2.0-flash", apiKey = "<key>"),
+    modelId = "gemini-2.0-flash",
+    modelFamily = "gemini",
+)
+
+// Streaming — tracking fires when the flow completes
+gemini.generateContentStream(prompt, inputMeta = WildEdge.analyzeText(prompt))
+    .collect { response -> append(response.text.orEmpty()) }
+
+// Unary
+val response = gemini.generateContent(prompt, inputMeta = WildEdge.analyzeText(prompt))
+
+// Untracked operations go through .model directly
+val chat = gemini.model.startChat(history)
+val tokens = gemini.model.countTokens(prompt)
+```
+
 ### Remote models
 
 ```kotlin
@@ -340,6 +361,10 @@ Integrate the WildEdge Android SDK (dev.wildedge:wildedge-android) into this pro
    - ONNX: val session = wildEdge.decorate(env.createSession(...), modelFile, modelVersion = "...")
    - LiteRT: val engine = wildEdge.decorate(Engine(config), config, modelVersion = "...")
    - MLKit: wildEdge.registerMlKitModel(...) and Task.trackWith(handle)
+   - Google AI (Gemini): val gemini = wildEdge.decorate(GenerativeModel(modelName = "...", apiKey = "..."), modelId = "gemini-2.0-flash")
+     Use gemini.generateContentStream(prompt, inputMeta = WildEdge.analyzeText(prompt)) for streaming,
+     gemini.generateContent(prompt, inputMeta = WildEdge.analyzeText(prompt)) for unary.
+     Untracked operations (startChat, countTokens) go through gemini.model directly.
    - Remote LLM: wildEdge.registerModel("id", ModelInfo(
          inputModality = InputModality.Text, outputModality = OutputModality.Generation, ...))
      Use handle.trackSuspendInference { } for suspend calls. Pass outputMetaExtractor to

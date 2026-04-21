@@ -46,6 +46,7 @@ dependencies {
     compileOnly(libs.onnxruntime)
     compileOnly(libs.litertlm)
     compileOnly(libs.googleai)
+    testImplementation(libs.googleai)
 
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.android)
