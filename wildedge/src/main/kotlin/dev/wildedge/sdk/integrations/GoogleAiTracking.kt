@@ -31,6 +31,8 @@ fun WildEdgeClient.registerGoogleAiModel(
         modelSource = "api",
         modelFormat = "api",
         modelFamily = modelFamily,
+        inputModality = InputModality.Text,
+        outputModality = OutputModality.Generation,
     ),
 )
 
@@ -66,8 +68,8 @@ fun Flow<GenerateContentResponse>.trackWith(
             charCount += chunk.length
             // usageMetadata is typically populated only on the final chunk
             response.usageMetadata?.let { meta ->
-                meta.promptTokenCount?.let { if (it > 0) tokensIn = it }
-                meta.candidatesTokenCount?.let { if (it > 0) tokensOut = it }
+                if (meta.promptTokenCount > 0) tokensIn = meta.promptTokenCount
+                if (meta.candidatesTokenCount > 0) tokensOut = meta.candidatesTokenCount
             }
             emit(response)
         }

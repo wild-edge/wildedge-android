@@ -76,6 +76,43 @@ class CoroutinesTrackingTest {
         assertEquals("detection", inf["output_modality"])
     }
 
+    @Test fun suspendTrackingOutputMetaExtractorReceivesResult() = runBlocking {
+        val (handle, events) = captureHandle()
+        handle.trackSuspendInference(
+            outputMetaExtractor = { result: String -> mapOf("extracted" to result) },
+        ) { "hello" }
+        val inference = events.first { it["event_type"] == "inference" }
+
+        @Suppress("UNCHECKED_CAST")
+        val outputMeta = (inference["inference"] as Map<String, Any?>)["output_meta"] as Map<String, Any?>?
+        assertEquals("hello", outputMeta?.get("extracted"))
+    }
+
+    @Test fun suspendTrackingOutputMetaExtractorTakesPrecedenceOverStaticOutputMeta() = runBlocking {
+        val (handle, events) = captureHandle()
+        handle.trackSuspendInference(
+            outputMeta = mapOf("source" to "static"),
+            outputMetaExtractor = { _: String -> mapOf("source" to "extractor") },
+        ) { "ignored" }
+        val inference = events.first { it["event_type"] == "inference" }
+
+        @Suppress("UNCHECKED_CAST")
+        val outputMeta = (inference["inference"] as Map<String, Any?>)["output_meta"] as Map<String, Any?>?
+        assertEquals("extractor", outputMeta?.get("source"))
+    }
+
+    @Test fun suspendTrackingStaticOutputMetaUsedWhenNoExtractor() = runBlocking {
+        val (handle, events) = captureHandle()
+        handle.trackSuspendInference(
+            outputMeta = mapOf("source" to "static"),
+        ) { Unit }
+        val inference = events.first { it["event_type"] == "inference" }
+
+        @Suppress("UNCHECKED_CAST")
+        val outputMeta = (inference["inference"] as Map<String, Any?>)["output_meta"] as Map<String, Any?>?
+        assertEquals("static", outputMeta?.get("source"))
+    }
+
     // --- Flow.trackWith ---
 
     @Test fun flowTrackingEmitsInferenceEventOnCompletion() = runBlocking {

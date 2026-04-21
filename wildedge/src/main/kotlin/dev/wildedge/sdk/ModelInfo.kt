@@ -9,6 +9,8 @@ package dev.wildedge.sdk
  * @property modelFormat Runtime format (e.g. "tflite", "onnx", "gguf").
  * @property modelFamily Optional model family (e.g. "llama", "gemma").
  * @property quantization Optional quantization scheme (e.g. "int8", "q4_k_m").
+ * @property inputModality Default input modality used when not specified per call.
+ * @property outputModality Default output modality used when not specified per call.
  */
 data class ModelInfo(
     val modelName: String,
@@ -17,6 +19,8 @@ data class ModelInfo(
     val modelFormat: String,
     val modelFamily: String? = null,
     val quantization: String? = null,
+    val inputModality: InputModality? = null,
+    val outputModality: OutputModality? = null,
 ) {
     internal fun toMap(): Map<String, Any?> = mapOf(
         "model_name" to modelName,

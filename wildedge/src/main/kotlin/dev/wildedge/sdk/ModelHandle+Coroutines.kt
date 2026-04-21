@@ -25,6 +25,7 @@ suspend fun <T> ModelHandle.trackSuspendInference(
     outputModality: OutputModality? = null,
     inputMeta: Map<String, Any?>? = null,
     outputMeta: Map<String, Any?>? = null,
+    outputMetaExtractor: ((T) -> Map<String, Any?>?)? = null,
     traceId: String? = null,
     parentSpanId: String? = null,
     block: suspend () -> T,
@@ -37,7 +38,7 @@ suspend fun <T> ModelHandle.trackSuspendInference(
             inputModality = inputModality,
             outputModality = outputModality,
             inputMeta = inputMeta,
-            outputMeta = outputMeta,
+            outputMeta = outputMetaExtractor?.invoke(result) ?: outputMeta,
             traceId = traceId,
             parentSpanId = parentSpanId,
         )

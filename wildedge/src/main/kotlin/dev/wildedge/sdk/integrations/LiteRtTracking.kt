@@ -25,6 +25,8 @@ fun WildEdgeClient.registerLiteRtModel(
         modelSource = "local",
         modelFormat = "litertlm",
         quantization = quantization,
+        inputModality = InputModality.Text,
+        outputModality = OutputModality.Generation,
     ),
 )
 
