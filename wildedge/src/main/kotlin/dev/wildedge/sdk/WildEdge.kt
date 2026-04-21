@@ -329,9 +329,28 @@ class WildEdge internal constructor(
 
     /** Factory methods for [WildEdge]. */
     companion object {
-        /** Initialises the SDK with an optional [Builder] configuration block and returns a [WildEdgeClient]. */
+        @Volatile private var instance: WildEdgeClient? = null
+
+        /** Initialises the SDK, stores the result as the shared instance, and returns it. */
         fun init(context: Context, block: Builder.() -> Unit = {}): WildEdgeClient =
-            Builder(context).apply(block).build()
+            Builder(context).apply(block).build().also { instance = it }
+
+        /**
+         * Returns the shared [WildEdgeClient] set by [init] or the manifest provider.
+         * @throws IllegalStateException if neither has run yet.
+         */
+        fun getInstance(): WildEdgeClient = instance
+            ?: error(
+                "WildEdge is not initialized. " +
+                    "Add <meta-data android:name=\"dev.wildedge.dsn\" android:value=\"...\"/> " +
+                    "to AndroidManifest.xml, or call WildEdge.init() in Application.onCreate()."
+            )
+
+        /** Returns the shared instance, or `null` if not yet initialized. */
+        fun instanceOrNull(): WildEdgeClient? = instance
+
+        /** Clears the shared instance. For tests only. */
+        internal fun clearInstance() { instance = null }
     }
 
     private fun isMainThread(): Boolean = Looper.myLooper() == Looper.getMainLooper()

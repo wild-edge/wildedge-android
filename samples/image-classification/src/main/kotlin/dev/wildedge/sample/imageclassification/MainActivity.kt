@@ -8,7 +8,6 @@ import dev.wildedge.sample.imageclassification.databinding.ActivityMainBinding
 import dev.wildedge.sdk.FeedbackType
 import dev.wildedge.sdk.ModelInfo
 import dev.wildedge.sdk.WildEdge
-import dev.wildedge.sdk.WildEdgeClient
 import dev.wildedge.sdk.integrations.decorate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -21,23 +20,17 @@ import java.nio.ByteOrder
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private lateinit var wildEdge: WildEdgeClient
+    private val wildEdge = WildEdge.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        wildEdge = WildEdge.init(this) {
-            dsn = BuildConfig.WILDEDGE_DSN
-            debug = true
-        }
-
-        if (BuildConfig.WILDEDGE_DSN.isEmpty()) {
-            binding.tvStatus.text = "noop mode: add wildedge.dsn=... to local.properties to enable reporting"
-        } else {
-            binding.tvStatus.text = "reporting enabled"
-        }
+        binding.tvStatus.text = if (getString(R.string.wildedge_dsn).isEmpty())
+            "noop mode: add wildedge.dsn=... to local.properties to enable reporting"
+        else
+            "reporting enabled"
 
         binding.btnRun.setOnClickListener {
             binding.btnRun.isEnabled = false

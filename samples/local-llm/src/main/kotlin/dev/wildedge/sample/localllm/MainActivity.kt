@@ -13,7 +13,6 @@ import com.google.ai.edge.litertlm.MessageCallback
 import dev.wildedge.sample.localllm.databinding.ActivityMainBinding
 import dev.wildedge.sdk.FeedbackType
 import dev.wildedge.sdk.WildEdge
-import dev.wildedge.sdk.WildEdgeClient
 import dev.wildedge.sdk.analysis.analyzeText
 import dev.wildedge.sdk.integrations.LiteRtEngineDecorator
 import dev.wildedge.sdk.integrations.decorate
@@ -26,7 +25,7 @@ import java.io.File
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private lateinit var wildEdge: WildEdgeClient
+    private val wildEdge = WildEdge.getInstance()
 
     private var engineDecorator: LiteRtEngineDecorator? = null
     private var conversation: com.google.ai.edge.litertlm.Conversation? = null
@@ -35,11 +34,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        wildEdge = WildEdge.init(this) {
-            dsn = BuildConfig.WILDEDGE_DSN
-            debug = true
-        }
 
         setInputEnabled(false)
         lifecycleScope.launch { prepareModel() }
@@ -102,7 +96,7 @@ class MainActivity : AppCompatActivity() {
         result.onSuccess { decorator ->
             engineDecorator = decorator
             conversation = decorator.createConversation()
-            setStatus(if (BuildConfig.WILDEDGE_DSN.isEmpty()) "noop mode, model ready" else "reporting enabled, model ready")
+            setStatus(if (getString(R.string.wildedge_dsn).isEmpty()) "noop mode, model ready" else "reporting enabled, model ready")
             setInputEnabled(true)
             binding.etPrompt.requestFocus()
         }.onFailure { e ->

@@ -1,6 +1,5 @@
 package examples.gallery
 
-import android.content.Context
 import android.graphics.Bitmap
 import com.google.ai.edge.litertlm.Contents
 import com.google.ai.edge.litertlm.Engine
@@ -10,16 +9,14 @@ import com.google.ai.edge.litertlm.MessageCallback
 import dev.wildedge.sdk.Accelerator
 import dev.wildedge.sdk.InputModality
 import dev.wildedge.sdk.WildEdge
-import dev.wildedge.sdk.WildEdgeClient
 import dev.wildedge.sdk.analysis.analyzeText
 import dev.wildedge.sdk.integrations.decorate
 import dev.wildedge.sdk.integrations.trackWith
 
-class GalleryExample(context: Context) {
+// Assumes WildEdge.init() has already run (manifest meta-data or Application.onCreate()).
+class GalleryExample {
 
-    private val wildEdge: WildEdgeClient = WildEdge.init(context) {
-        dsn = System.getenv("WILDEDGE_DSN") ?: ""
-    }
+    private val wildEdge = WildEdge.getInstance()
 
     private val config = EngineConfig(modelPath = "/path/to/gemma-3n_int4.bin")
 
@@ -48,6 +45,5 @@ class GalleryExample(context: Context) {
     fun close() {
         conversation.close()
         trackedEngine.close()
-        wildEdge.close()
     }
 }

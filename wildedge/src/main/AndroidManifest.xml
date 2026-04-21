@@ -2,4 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application>
+        <provider
+            android:name="dev.wildedge.sdk.WildEdgeInitProvider"
+            android:authorities="${applicationId}.wildedge_init_provider"
+            android:exported="false"
+            android:initOrder="100" />
+    </application>
 </manifest>

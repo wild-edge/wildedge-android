@@ -4,17 +4,15 @@ import android.content.Context
 import android.graphics.Bitmap
 import dev.wildedge.sdk.Accelerator
 import dev.wildedge.sdk.WildEdge
-import dev.wildedge.sdk.WildEdgeClient
 import dev.wildedge.sdk.analysis.analyzeImage
 import dev.wildedge.sdk.integrations.decorate
 import org.tensorflow.lite.Interpreter
 import java.io.File
 
+// Assumes WildEdge.init() has already run (manifest meta-data or Application.onCreate()).
 class TFLiteExample(context: Context) {
 
-    private val wildEdge: WildEdgeClient = WildEdge.init(context) {
-        dsn = System.getenv("WILDEDGE_DSN") ?: ""
-    }
+    private val wildEdge = WildEdge.getInstance()
 
     private val modelFile = File(context.filesDir, "models/mobilenet_v3_int8.tflite")
 
@@ -46,6 +44,5 @@ class TFLiteExample(context: Context) {
     fun close() {
         tracked.close()
         trackedGpu.close()
-        wildEdge.close()
     }
 }

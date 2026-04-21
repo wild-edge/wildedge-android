@@ -1,11 +1,9 @@
 package examples.coroutines
 
-import android.content.Context
 import dev.wildedge.sdk.InputModality
 import dev.wildedge.sdk.ModelInfo
 import dev.wildedge.sdk.OutputModality
 import dev.wildedge.sdk.WildEdge
-import dev.wildedge.sdk.WildEdgeClient
 import dev.wildedge.sdk.analysis.analyzeText
 import dev.wildedge.sdk.events.TextInputMeta
 import dev.wildedge.sdk.trackSuspendInference
@@ -14,11 +12,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 
-class CoroutinesExample(context: Context) {
+// Assumes WildEdge.init() has already run (manifest meta-data or Application.onCreate()).
+class CoroutinesExample {
 
-    private val wildEdge: WildEdgeClient = WildEdge.init(context) {
-        dsn = System.getenv("WILDEDGE_DSN") ?: ""
-    }
+    private val wildEdge = WildEdge.getInstance()
 
     private val classifyHandle = wildEdge.registerModel(
         "mobilenet-v3",
@@ -55,5 +52,4 @@ class CoroutinesExample(context: Context) {
             emit("Hello"); emit(", "); emit("world!")
         }
 
-    fun close() = wildEdge.close()
 }

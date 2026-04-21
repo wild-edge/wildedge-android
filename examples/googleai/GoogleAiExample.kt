@@ -1,19 +1,16 @@
 package examples.googleai
 
-import android.content.Context
 import com.google.ai.client.generativeai.GenerativeModel
 import dev.wildedge.sdk.WildEdge
-import dev.wildedge.sdk.WildEdgeClient
 import dev.wildedge.sdk.analysis.analyzeText
 import dev.wildedge.sdk.integrations.generateContentTracked
 import dev.wildedge.sdk.integrations.registerGoogleAiModel
 import dev.wildedge.sdk.integrations.trackWith
 
-class GoogleAiExample(context: Context) {
+// Assumes WildEdge.init() has already run (manifest meta-data or Application.onCreate()).
+class GoogleAiExample {
 
-    private val wildEdge: WildEdgeClient = WildEdge.init(context) {
-        dsn = System.getenv("WILDEDGE_DSN") ?: ""
-    }
+    private val wildEdge = WildEdge.getInstance()
 
     private val model = GenerativeModel(
         modelName = "gemini-2.0-flash",
@@ -37,5 +34,4 @@ class GoogleAiExample(context: Context) {
         inputMeta = WildEdge.analyzeText(prompt),
     )
 
-    fun close() = wildEdge.close()
 }
