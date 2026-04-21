@@ -369,8 +369,8 @@ Integrate the WildEdge Android SDK (dev.wildedge:wildedge-android) into this pro
            GenerationOutputMeta(tokensIn = r.usage.promptTokens, tokensOut = r.usage.completionTokens).toMap()
        }
    For decorator integrations, assign the result to the same variable name as the original
-   so call sites don't change. modelVersion is optional — only pass it if you find a real
-   version string in the model filename, asset path, or an existing version constant.
+   so call sites don't change. Only pass modelVersion if you find a real version string
+   in the model filename, asset path, or an existing version constant.
    For streaming LLM output (Flow<String>) use flow.trackWith(handle).
 
 3. Set up WildEdge (pick one):
