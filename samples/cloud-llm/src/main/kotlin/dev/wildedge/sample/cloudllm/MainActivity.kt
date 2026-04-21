@@ -9,8 +9,8 @@ import com.google.ai.client.generativeai.GenerativeModel
 import dev.wildedge.sample.cloudllm.databinding.ActivityMainBinding
 import dev.wildedge.sdk.WildEdge
 import dev.wildedge.sdk.analysis.analyzeText
-import dev.wildedge.sdk.integrations.registerGoogleAiModel
-import dev.wildedge.sdk.integrations.trackWith
+import dev.wildedge.sdk.integrations.GoogleAiDecorator
+import dev.wildedge.sdk.integrations.decorate
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -24,7 +24,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val wildEdge = WildEdge.getInstance()
 
-    private lateinit var model: GenerativeModel
+    private lateinit var model: GoogleAiDecorator
     private var generateJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,12 +32,8 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        model = GenerativeModel(
-            modelName = MODEL_NAME,
-            apiKey = BuildConfig.GOOGLE_AI_API_KEY,
-        )
-
-        val handle = wildEdge.registerGoogleAiModel(
+        model = wildEdge.decorate(
+            GenerativeModel(modelName = MODEL_NAME, apiKey = BuildConfig.GOOGLE_AI_API_KEY),
             modelId = MODEL_NAME,
             modelFamily = "gemini",
         )
@@ -73,8 +69,7 @@ class MainActivity : AppCompatActivity() {
 
             generateJob = lifecycleScope.launch {
                 try {
-                    model.generateContentStream(prompt)
-                        .trackWith(handle, inputMeta = inputMeta)
+                    model.generateContentStream(prompt, inputMeta = inputMeta)
                         .collect { response ->
                             val chunk = response.text.orEmpty()
                             if (chunk.isNotEmpty()) {
