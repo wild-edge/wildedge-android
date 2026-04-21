@@ -14,7 +14,7 @@ fun WildEdgeClient.registerMlKitModel(
     modelId: String,
     modelName: String = modelId,
     modelSource: String = "mlkit",
-    modelVersion: String = "unknown",
+    modelVersion: String? = null,
 ): ModelHandle = registerModel(
     modelId,
     ModelInfo(

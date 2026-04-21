@@ -15,7 +15,7 @@ import dev.wildedge.sdk.events.TextInputMeta
 fun WildEdgeClient.registerLiteRtModel(
     modelId: String,
     modelName: String = modelId,
-    modelVersion: String = "unknown",
+    modelVersion: String? = null,
     quantization: String? = null,
 ): ModelHandle = registerModel(
     modelId,

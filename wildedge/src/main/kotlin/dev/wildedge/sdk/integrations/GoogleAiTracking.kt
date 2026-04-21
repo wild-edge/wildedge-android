@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.flow
 fun WildEdgeClient.registerGoogleAiModel(
     modelId: String,
     modelName: String = modelId,
-    modelVersion: String = "unknown",
+    modelVersion: String? = null,
     modelFamily: String? = "gemini",
 ): ModelHandle = registerModel(
     modelId,

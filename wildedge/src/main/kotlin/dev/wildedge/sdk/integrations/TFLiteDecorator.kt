@@ -17,7 +17,7 @@ class TFLiteDecorator(
     private val interpreter: Interpreter,
     private val wildEdge: WildEdgeClient,
     modelId: String,
-    modelVersion: String = "unknown",
+    modelVersion: String? = null,
     quantization: String? = null,
     accelerator: dev.wildedge.sdk.Accelerator? = null,
     private val labels: List<String>? = null,
@@ -87,7 +87,7 @@ class TFLiteDecorator(
 fun WildEdgeClient.decorate(
     interpreter: Interpreter,
     modelFile: File,
-    modelVersion: String = "unknown",
+    modelVersion: String? = null,
     accelerator: dev.wildedge.sdk.Accelerator? = null,
     labels: List<String>? = null,
     numClasses: Int = labels?.size ?: 0,
@@ -106,7 +106,7 @@ fun WildEdgeClient.decorate(
 fun WildEdgeClient.decorate(
     interpreter: Interpreter,
     modelId: String,
-    modelVersion: String = "unknown",
+    modelVersion: String? = null,
     quantization: String? = null,
     accelerator: dev.wildedge.sdk.Accelerator? = null,
     labels: List<String>? = null,

@@ -43,7 +43,7 @@ internal class ModelRegistry(private val persistFile: File? = null) {
             val obj = root.optJSONObject(modelId) ?: continue
 
             val modelName = obj.optStringOrNull("model_name") ?: continue
-            val modelVersion = obj.optStringOrNull("model_version") ?: continue
+            val modelVersion = obj.optStringOrNull("model_version")
             val modelSource = obj.optStringOrNull("model_source") ?: continue
             val modelFormat = obj.optStringOrNull("model_format") ?: continue
 

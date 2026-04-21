@@ -23,7 +23,7 @@ class GalleryExample {
     private val engine = run {
         val start = System.currentTimeMillis()
         val engine = Engine(config).also { it.initialize() }
-        wildEdge.decorate(engine, config, loadDurationMs = (System.currentTimeMillis() - start).toInt(), modelVersion = "1.0", accelerator = Accelerator.GPU)
+        wildEdge.decorate(engine, config, loadDurationMs = (System.currentTimeMillis() - start).toInt(), accelerator = Accelerator.GPU)
     }
 
     private val conversation = engine.createConversation()

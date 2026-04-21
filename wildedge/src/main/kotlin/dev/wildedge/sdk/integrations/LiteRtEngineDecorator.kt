@@ -35,7 +35,7 @@ fun WildEdgeClient.decorate(
     engine: Engine,
     config: EngineConfig,
     loadDurationMs: Int = 0,
-    modelVersion: String = "unknown",
+    modelVersion: String? = null,
     accelerator: dev.wildedge.sdk.Accelerator? = null,
 ): LiteRtEngineDecorator {
     val modelFile = File(config.modelPath)
@@ -60,7 +60,7 @@ fun WildEdgeClient.decorate(
     engine: Engine,
     loadDurationMs: Int = 0,
     modelId: String,
-    modelVersion: String = "unknown",
+    modelVersion: String? = null,
     quantization: String? = null,
     accelerator: dev.wildedge.sdk.Accelerator? = null,
 ): LiteRtEngineDecorator {
