@@ -45,11 +45,11 @@ Without a DSN the samples run in noop mode: all tracking calls work, events are 
 
 ## Install
 
-Add to your module's `build.gradle.kts`:
+> Not yet published. Watch [Releases](https://github.com/wild-edge/wildedge-android/releases) for the first published version.
 
 ```kotlin
 dependencies {
-    implementation("dev.wildedge:wildedge-android:<version>")
+    implementation("dev.wildedge:wildedge-android:0.1.0")
 }
 ```
 
