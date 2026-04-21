@@ -154,14 +154,13 @@ faceDetector.process(image).trackWith(handle) { faces ->
 ### LiteRT LLM (litertlm)
 
 ```kotlin
-val handle = wildEdge.registerLiteRtModel(
-    "gemma-3n", quantization = "int4"
-)
+val engineConfig = EngineConfig(modelPath = modelPath)
+val engine = wildEdge.decorate(Engine(engineConfig), engineConfig)
+val conversation = engine.createConversation()
 
-val inputMeta = WildEdge.analyzeText(userInput)
-val listener = resultListener.trackWith(handle, inputMeta)
-
+val listener = resultListener.trackWith(engine.handle, WildEdge.analyzeText(userInput))
 conversation.sendMessageAsync(contents, listener)
+engine.close()
 ```
 
 Captures total duration, time to first token, tokens/sec, and estimated tokens in/out. Works identically for AICore.
