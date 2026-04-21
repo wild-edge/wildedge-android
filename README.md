@@ -55,11 +55,37 @@ dependencies {
 
 ## Setup
 
+### Option A: manifest
+
+Add to `AndroidManifest.xml` and WildEdge initializes itself before `Application.onCreate()` runs:
+
+```xml
+<!-- AndroidManifest.xml -->
+<application ...>
+    <meta-data
+        android:name="dev.wildedge.dsn"
+        android:value="@string/wildedge_dsn" />
+</application>
+```
+
 ```kotlin
-val wildEdge = WildEdge.init(applicationContext) {
+// strings.xml (keep out of source control)
+<string name="wildedge_dsn">https://&lt;secret&gt;@ingest.wildedge.dev/&lt;key&gt;</string>
+```
+
+```kotlin
+val wildEdge = WildEdge.getInstance()
+```
+
+### Option B: manual init
+
+```kotlin
+val wildEdge: WildEdgeClient = WildEdge.init(applicationContext) {
     dsn = "https://<secret>@ingest.wildedge.dev/<key>" // or WILDEDGE_DSN env var
 }
 ```
+
+`init()` also sets the shared instance, so `WildEdge.getInstance()` works after this call.
 
 If no DSN is set, the client becomes a no-op and logs a warning. No DSN = zero overhead, so it's safe to ship in all build variants.
 
@@ -354,13 +380,15 @@ Integrate the WildEdge Android SDK (dev.wildedge:wildedge-android) into this pro
    For suspend/coroutine inference code use handle.trackSuspendInference { }.
    For streaming LLM output (Flow<String>) use flow.trackWith(handle).
 
-3. Initialise WildEdge once in Application.onCreate():
+3. Set up WildEdge (pick one):
+   Option A (zero code): add to AndroidManifest.xml inside <application>:
+      <meta-data android:name="dev.wildedge.dsn" android:value="YOUR_DSN" />
+   Then call WildEdge.getInstance() wherever inference code lives.
+   Option B (manual): call WildEdge.init() in Application.onCreate():
       val wildEdge: WildEdgeClient = WildEdge.init(this) {
           dsn = "YOUR_DSN"   // get yours at wildedge.dev
-          // appVersion is auto-detected from PackageInfo; override if needed
       }
-   Inject it via constructor, DI, or a singleton wherever inference code lives.
-   In tests inject WildEdgeClient.noop() instead.
+   Either way, inject WildEdgeClient.noop() in tests instead of the real client.
 
 4. If multiple models run in sequence for a single user request (embed then classify,
    prefill then decode), wrap the pipeline in wildEdge.trace("name") { } so events

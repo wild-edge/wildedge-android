@@ -1,15 +1,12 @@
 package examples.tracing
 
-import android.content.Context
 import dev.wildedge.sdk.ModelInfo
 import dev.wildedge.sdk.WildEdge
-import dev.wildedge.sdk.WildEdgeClient
 
-class TracingExample(context: Context) {
+// Assumes WildEdge.init() has already run (manifest meta-data or Application.onCreate()).
+class TracingExample {
 
-    private val wildEdge: WildEdgeClient = WildEdge.init(context) {
-        dsn = System.getenv("WILDEDGE_DSN") ?: ""
-    }
+    private val wildEdge = WildEdge.getInstance()
 
     private val embedHandle = wildEdge.registerModel("embed", ModelInfo("Embed", "1", "local", "tflite"))
     private val classifyHandle = wildEdge.registerModel("classify", ModelInfo("Classify", "1", "local", "tflite"))
@@ -37,7 +34,4 @@ class TracingExample(context: Context) {
     private fun runEmbedding(input: ByteArray): FloatArray = FloatArray(128)
     private fun runClassification(embedding: FloatArray): String = "label"
 
-    fun close() {
-        wildEdge.close()
-    }
 }

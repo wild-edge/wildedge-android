@@ -1,22 +1,19 @@
 package examples.mlkit
 
-import android.content.Context
 import android.graphics.Bitmap
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import dev.wildedge.sdk.WildEdge
-import dev.wildedge.sdk.WildEdgeClient
 import dev.wildedge.sdk.analysis.analyzeImage
 import dev.wildedge.sdk.events.DetectionOutputMeta
 import dev.wildedge.sdk.integrations.registerMlKitModel
 import dev.wildedge.sdk.integrations.trackWith
 
-class MLKitExample(context: Context) {
+// Assumes WildEdge.init() has already run (manifest meta-data or Application.onCreate()).
+class MLKitExample {
 
-    private val wildEdge: WildEdgeClient = WildEdge.init(context) {
-        dsn = System.getenv("WILDEDGE_DSN") ?: ""
-    }
+    private val wildEdge = WildEdge.getInstance()
 
     private val handle = wildEdge.registerMlKitModel("face-detector", modelVersion = "16.1")
 
@@ -38,6 +35,5 @@ class MLKitExample(context: Context) {
 
     fun close() {
         detector.close()
-        wildEdge.close()
     }
 }

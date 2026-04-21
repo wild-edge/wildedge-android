@@ -20,7 +20,7 @@ android {
         val localProps = Properties()
         rootProject.file("local.properties").takeIf { it.exists() }
             ?.inputStream()?.use { localProps.load(it) }
-        buildConfigField("String", "WILDEDGE_DSN", "\"${localProps.getProperty("wildedge.dsn", "")}\"")
+        resValue("string", "wildedge_dsn", localProps.getProperty("wildedge.dsn", ""))
         // Get a free key at https://aistudio.google.com and add google.ai.api.key=AIza... to local.properties
         buildConfigField("String", "GOOGLE_AI_API_KEY", "\"${localProps.getProperty("google.ai.api.key", "")}\"")
     }

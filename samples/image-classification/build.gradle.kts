@@ -22,11 +22,10 @@ android {
         val localProps = Properties()
         rootProject.file("local.properties").takeIf { it.exists() }
             ?.inputStream()?.use { localProps.load(it) }
-        buildConfigField("String", "WILDEDGE_DSN", "\"${localProps.getProperty("wildedge.dsn", "")}\"")
+        resValue("string", "wildedge_dsn", localProps.getProperty("wildedge.dsn", ""))
     }
 
     buildFeatures {
-        buildConfig = true
         viewBinding = true
     }
 
@@ -61,4 +60,5 @@ dependencies {
     compileOnly(libs.onnxruntime)
     compileOnly(libs.litertlm)
     compileOnly(libs.mlkit.face)
+    compileOnly(libs.googleai)
 }

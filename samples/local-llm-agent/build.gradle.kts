@@ -20,7 +20,7 @@ android {
         val localProps = Properties()
         rootProject.file("local.properties").takeIf { it.exists() }
             ?.inputStream()?.use { localProps.load(it) }
-        buildConfigField("String", "WILDEDGE_DSN", "\"${localProps.getProperty("wildedge.dsn", "")}\"")
+        resValue("string", "wildedge_dsn", localProps.getProperty("wildedge.dsn", ""))
         // Optional: Hugging Face read token for swapping in a gated model (e.g. Gemma).
         // Generate one at https://huggingface.co/settings/tokens and add hf.token=hf_... to local.properties.
         buildConfigField("String", "HF_TOKEN", "\"${localProps.getProperty("hf.token", "")}\"")
@@ -61,4 +61,5 @@ dependencies {
     compileOnly(libs.tflite.gpu)
     compileOnly(libs.onnxruntime)
     compileOnly(libs.mlkit.face)
+    compileOnly(libs.googleai)
 }

@@ -10,6 +10,9 @@
         android:supportsRtl="true"
         android:networkSecurityConfig="@xml/network_security_config">
 
+        <meta-data android:name="dev.wildedge.dsn" android:value="@string/wildedge_dsn" />
+        <meta-data android:name="dev.wildedge.debug" android:value="true" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

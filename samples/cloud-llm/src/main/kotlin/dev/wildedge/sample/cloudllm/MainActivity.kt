@@ -8,7 +8,6 @@ import androidx.lifecycle.lifecycleScope
 import com.google.ai.client.generativeai.GenerativeModel
 import dev.wildedge.sample.cloudllm.databinding.ActivityMainBinding
 import dev.wildedge.sdk.WildEdge
-import dev.wildedge.sdk.WildEdgeClient
 import dev.wildedge.sdk.analysis.analyzeText
 import dev.wildedge.sdk.integrations.registerGoogleAiModel
 import dev.wildedge.sdk.integrations.trackWith
@@ -23,7 +22,7 @@ private const val MODEL_NAME = "gemini-2.0-flash-lite"
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private lateinit var wildEdge: WildEdgeClient
+    private val wildEdge = WildEdge.getInstance()
 
     private lateinit var model: GenerativeModel
     private var generateJob: Job? = null
@@ -32,11 +31,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        wildEdge = WildEdge.init(this) {
-            dsn = BuildConfig.WILDEDGE_DSN
-            debug = true
-        }
 
         model = GenerativeModel(
             modelName = MODEL_NAME,
@@ -48,11 +42,12 @@ class MainActivity : AppCompatActivity() {
             modelFamily = "gemini",
         )
 
-        val ready = when {
-            BuildConfig.GOOGLE_AI_API_KEY.isEmpty() -> "Add google.ai.api.key to local.properties"
-            BuildConfig.WILDEDGE_DSN.isEmpty() -> "noop mode - add wildedge.dsn to local.properties to enable reporting"
-            else -> "Ready"
-        }
+        val ready = if (BuildConfig.GOOGLE_AI_API_KEY.isEmpty())
+            "Add google.ai.api.key to local.properties"
+        else if (getString(R.string.wildedge_dsn).isEmpty())
+            "noop mode - add wildedge.dsn to local.properties to enable reporting"
+        else
+            "Ready"
         setStatus(ready)
 
         binding.btnGenerate.setOnClickListener {
