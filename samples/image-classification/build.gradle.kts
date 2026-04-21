@@ -25,6 +25,16 @@ android {
         resValue("string", "wildedge_dsn", localProps.getProperty("wildedge.dsn", ""))
     }
 
+    buildTypes {
+        release {
+            // No extra rules: relies on the library's consumer-rules.pro.
+            // If R8 strips or renames anything the app references, the build fails.
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+
     buildFeatures {
         viewBinding = true
     }
