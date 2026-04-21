@@ -53,6 +53,22 @@ dependencies {
 }
 ```
 
+Or with a version catalog (`gradle/libs.versions.toml`):
+
+```toml
+[versions]
+wildedge = "0.1.0"
+
+[libraries]
+wildedge = { group = "dev.wildedge", name = "wildedge-android", version.ref = "wildedge" }
+```
+
+```kotlin
+dependencies {
+    implementation(libs.wildedge)
+}
+```
+
 ## Setup
 
 ### Option A: manifest
