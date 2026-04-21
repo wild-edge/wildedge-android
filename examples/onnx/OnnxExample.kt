@@ -22,7 +22,6 @@ class OnnxExample(context: Context) {
     private val session = wildEdge.decorate(
         OrtEnvironment.getEnvironment().createSession(modelFile.absolutePath, OrtSession.SessionOptions()),
         modelFile,
-        modelVersion = "1.0",
     )
 
     fun run(bitmap: Bitmap, inputs: Map<String, OnnxTensor>) = session.run(

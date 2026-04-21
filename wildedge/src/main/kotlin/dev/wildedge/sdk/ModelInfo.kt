@@ -4,7 +4,7 @@ package dev.wildedge.sdk
  * Metadata describing a registered model.
  *
  * @property modelName Human-readable model name.
- * @property modelVersion Semantic version string.
+ * @property modelVersion Semantic version string. `null` if unknown.
  * @property modelSource Origin of the model (e.g. "huggingface", "custom").
  * @property modelFormat Runtime format (e.g. "tflite", "onnx", "gguf").
  * @property modelFamily Optional model family (e.g. "llama", "gemma").
@@ -14,7 +14,7 @@ package dev.wildedge.sdk
  */
 data class ModelInfo(
     val modelName: String,
-    val modelVersion: String,
+    val modelVersion: String? = null,
     val modelSource: String,
     val modelFormat: String,
     val modelFamily: String? = null,

@@ -54,7 +54,6 @@ class MainActivity : AppCompatActivity() {
             "mobilenet-v1",
             ModelInfo(
                 modelName = "MobileNet V1",
-                modelVersion = "1.0",
                 modelSource = "remote",
                 modelFormat = "tflite",
                 quantization = "uint8",
@@ -84,7 +83,6 @@ class MainActivity : AppCompatActivity() {
                 wildEdge.decorate(
                     interpreter,
                     modelId = "mobilenet-v1",
-                    modelVersion = "1.0",
                     quantization = "uint8",
                 ),
                 inShape,

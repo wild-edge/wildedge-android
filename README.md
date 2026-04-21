@@ -29,7 +29,7 @@ Then wrap your TFLite interpreter:
 ```kotlin
 val wildEdge = WildEdge.getInstance()
 val interpreter = wildEdge.decorate(
-    Interpreter(modelFile, Interpreter.Options()), modelFile, modelVersion = "1.0"
+    Interpreter(modelFile, Interpreter.Options()), modelFile
 )
 
 interpreter.run(inputBuffer, outputBuffer)
@@ -133,7 +133,7 @@ val interpreter = wildEdge.decorate(
 val modelFile = File(modelPath) // e.g. "face_detector_fp16.onnx"
 val session = wildEdge.decorate(
     env.createSession(modelFile.absolutePath, OrtSession.SessionOptions()),
-    modelFile, modelVersion = "1.0"
+    modelFile
 )
 // modelId = "face_detector_fp16", quantization = "f16"
 
@@ -155,7 +155,7 @@ faceDetector.process(image).trackWith(handle) { faces ->
 
 ```kotlin
 val handle = wildEdge.registerLiteRtModel(
-    "gemma-3n", modelVersion = "1.0", quantization = "int4"
+    "gemma-3n", quantization = "int4"
 )
 
 val inputMeta = WildEdge.analyzeText(userInput)
@@ -171,7 +171,7 @@ Captures total duration, time to first token, tokens/sec, and estimated tokens i
 ```kotlin
 val interpreter = wildEdge.decorate(
     InterpreterApi.create(modelFile, InterpreterApi.Options()),
-    modelFile, modelVersion = "1.0"
+    modelFile
 )
 
 interpreter.run(inputBuffer, outputBuffer)
@@ -369,8 +369,8 @@ Integrate the WildEdge Android SDK (dev.wildedge:wildedge-android) into this pro
            GenerationOutputMeta(tokensIn = r.usage.promptTokens, tokensOut = r.usage.completionTokens).toMap()
        }
    For decorator integrations, assign the result to the same variable name as the original
-   so call sites don't change. Pass a real modelVersion string (check the model filename,
-   asset path, or any version constant in the code).
+   so call sites don't change. Only pass modelVersion if you find a real version string
+   in the model filename, asset path, or an existing version constant.
    For streaming LLM output (Flow<String>) use flow.trackWith(handle).
 
 3. Set up WildEdge (pick one):

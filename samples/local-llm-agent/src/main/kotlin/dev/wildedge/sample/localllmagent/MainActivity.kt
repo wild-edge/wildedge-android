@@ -68,7 +68,6 @@ class MainActivity : AppCompatActivity() {
                 modelFile.nameWithoutExtension,
                 ModelInfo(
                     modelName = modelFile.nameWithoutExtension,
-                    modelVersion = "1.0",
                     modelSource = "remote",
                     modelFormat = "litertlm",
                     inputModality = InputModality.Text,

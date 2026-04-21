@@ -18,7 +18,7 @@ class PlayServicesTfliteDecorator(
     private val interpreter: InterpreterApi,
     wildEdge: WildEdgeClient,
     modelId: String,
-    modelVersion: String = "unknown",
+    modelVersion: String? = null,
     quantization: String? = null,
     accelerator: dev.wildedge.sdk.Accelerator? = null,
     private val labels: List<String>? = null,
@@ -79,7 +79,7 @@ class PlayServicesTfliteDecorator(
 fun WildEdgeClient.decorate(
     interpreter: InterpreterApi,
     modelFile: File,
-    modelVersion: String = "unknown",
+    modelVersion: String? = null,
     accelerator: dev.wildedge.sdk.Accelerator? = null,
     labels: List<String>? = null,
     numClasses: Int = labels?.size ?: 0,
@@ -98,7 +98,7 @@ fun WildEdgeClient.decorate(
 fun WildEdgeClient.decorate(
     interpreter: InterpreterApi,
     modelId: String,
-    modelVersion: String = "unknown",
+    modelVersion: String? = null,
     quantization: String? = null,
     accelerator: dev.wildedge.sdk.Accelerator? = null,
     labels: List<String>? = null,
