@@ -39,7 +39,7 @@ jobs:
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-        run: ./gradlew publishAllPublicationsToMavenCentralRepository --no-daemon
+        run: ./gradlew publishAggregatedPublicationToCentralPortal --no-daemon
 
       - name: Create GitHub release
         if: github.ref_type == 'tag'
