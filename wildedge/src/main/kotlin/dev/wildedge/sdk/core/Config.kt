@@ -1,7 +1,7 @@
 package dev.wildedge.sdk
 
 internal object Config {
-    const val SDK_VERSION = "wildedge-android-0.1.0"
+    val SDK_VERSION: String get() = BuildConfig.SDK_VERSION
     const val PROTOCOL_VERSION = "1.0"
 
     const val ENV_DSN = "WILDEDGE_DSN"

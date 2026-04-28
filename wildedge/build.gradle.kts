@@ -15,12 +15,18 @@ android {
         minSdk = 24
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
+        buildConfigField("String", "SDK_VERSION", "\"wildedge-android-${project.property("VERSION_NAME")}\"")
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+
 
     testOptions {
         unitTests {

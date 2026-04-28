@@ -46,7 +46,7 @@ No DSN? The client runs in noop mode: all calls work, events are discarded. Safe
 
 ```kotlin
 dependencies {
-    implementation("dev.wildedge:wildedge-android:0.1.0")
+    implementation("dev.wildedge:wildedge-android:0.2.0")
 }
 ```
 
@@ -54,7 +54,7 @@ With a version catalog (`gradle/libs.versions.toml`):
 
 ```toml
 [versions]
-wildedge = "0.1.0"
+wildedge = "0.2.0"
 
 [libraries]
 wildedge = { group = "dev.wildedge", name = "wildedge-android", version.ref = "wildedge" }
@@ -457,7 +457,7 @@ Local Maven usage:
 
 ```kotlin
 repositories { mavenLocal() }
-dependencies { implementation("dev.wildedge:wildedge-android:0.1.0") }
+dependencies { implementation("dev.wildedge:wildedge-android:0.2.0") }
 ```
 
 **Runtime requirements:** minSdk 24 (Android 7.0), no required transitive dependencies. TFLite / ONNX Runtime are `compileOnly`; bring your own version.
