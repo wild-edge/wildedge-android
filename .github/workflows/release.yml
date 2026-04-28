@@ -23,15 +23,12 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Verify tag matches VERSION_NAME
+      - name: Set VERSION_NAME from tag
         if: github.ref_type == 'tag'
         run: |
           TAG="${GITHUB_REF_NAME#v}"
-          VERSION=$(grep '^VERSION_NAME=' gradle.properties | cut -d= -f2)
-          if [ "$TAG" != "$VERSION" ]; then
-            echo "Tag $GITHUB_REF_NAME does not match VERSION_NAME=$VERSION"
-            exit 1
-          fi
+          sed -i "s/^VERSION_NAME=.*/VERSION_NAME=$TAG/" gradle.properties
+          echo "VERSION_NAME set to $TAG"
 
       - name: Build and publish to Maven Central
         env:
