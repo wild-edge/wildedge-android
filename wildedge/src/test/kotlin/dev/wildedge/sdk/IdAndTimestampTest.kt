@@ -37,7 +37,12 @@ class IdAndTimestampTest {
         val ids = ConcurrentHashMap.newKeySet<String>()
         val latch = CountDownLatch(1000)
         val pool = Executors.newFixedThreadPool(8)
-        repeat(1000) { pool.submit { ids.add(newId()); latch.countDown() } }
+        repeat(1000) {
+            pool.submit {
+                ids.add(newId())
+                latch.countDown()
+            }
+        }
         assertTrue("tasks did not finish in time", latch.await(5, TimeUnit.SECONDS))
         pool.shutdown()
         assertEquals(1000, ids.size)
@@ -63,7 +68,12 @@ class IdAndTimestampTest {
         val results = ConcurrentHashMap.newKeySet<String>()
         val latch = CountDownLatch(500)
         val pool = Executors.newFixedThreadPool(8)
-        repeat(500) { pool.submit { results.add(1705318200000L.toIsoString()); latch.countDown() } }
+        repeat(500) {
+            pool.submit {
+                results.add(1705318200000L.toIsoString())
+                latch.countDown()
+            }
+        }
         assertTrue("tasks did not finish in time", latch.await(5, TimeUnit.SECONDS))
         pool.shutdown()
         assertEquals(setOf("2024-01-15T11:30:00.000Z"), results)

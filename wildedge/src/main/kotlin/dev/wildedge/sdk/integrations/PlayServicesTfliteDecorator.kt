@@ -160,5 +160,7 @@ fun WildEdgeClient.decorate(
     val start = System.currentTimeMillis()
     val interpreter = load()
     val loadDurationMs = (System.currentTimeMillis() - start).toInt()
-    return PlayServicesTfliteDecorator(interpreter, this, modelId, modelVersion, quantization, accelerator, labels, numClasses, loadDurationMs)
+    return PlayServicesTfliteDecorator(
+        interpreter, this, modelId, modelVersion, quantization, accelerator, labels, numClasses, loadDurationMs,
+    )
 }

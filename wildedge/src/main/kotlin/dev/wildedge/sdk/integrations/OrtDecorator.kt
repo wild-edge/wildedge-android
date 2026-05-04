@@ -140,7 +140,9 @@ fun WildEdgeClient.decorate(
     labels: List<String>? = null,
     numClasses: Int = labels?.size ?: 0,
     loadDurationMs: Int = 0,
-): OrtDecorator = OrtDecorator(session, this, modelId, modelVersion, quantization, accelerator, labels, numClasses, loadDurationMs)
+): OrtDecorator = OrtDecorator(
+    session, this, modelId, modelVersion, quantization, accelerator, labels, numClasses, loadDurationMs,
+)
 
 /** Creates an [OrtDecorator] with explicit model metadata, timing the [load] block. */
 fun WildEdgeClient.decorate(
@@ -155,5 +157,7 @@ fun WildEdgeClient.decorate(
     val start = System.currentTimeMillis()
     val session = load()
     val loadDurationMs = (System.currentTimeMillis() - start).toInt()
-    return OrtDecorator(session, this, modelId, modelVersion, quantization, accelerator, labels, numClasses, loadDurationMs)
+    return OrtDecorator(
+        session, this, modelId, modelVersion, quantization, accelerator, labels, numClasses, loadDurationMs,
+    )
 }

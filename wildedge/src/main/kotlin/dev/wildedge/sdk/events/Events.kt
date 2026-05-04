@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package dev.wildedge.sdk.events
 
 import dev.wildedge.sdk.Config
@@ -17,6 +19,7 @@ private val isoFormatter = ThreadLocal.withInitial {
 
 internal fun Long.toIsoString(): String = isoFormatter.get()!!.format(Date(this))
 
+@Suppress("MagicNumber")
 internal fun newId(): String {
     val rng = ThreadLocalRandom.current()
     val hi = rng.nextLong()
@@ -34,10 +37,15 @@ internal fun newId(): String {
     }
 }
 
+@Suppress("MagicNumber")
 private fun StringBuilder.appendHex(value: Long, digits: Int) {
     for (shift in (digits - 1) * 4 downTo 0 step 4) {
         append(HEX_CHARS[(value ushr shift and 0xF).toInt()])
     }
+}
+
+private fun MutableMap<String, Any?>.putIfNotNull(key: String, value: Any?) {
+    if (value != null) put(key, value)
 }
 
 /**
@@ -69,20 +77,21 @@ data class HardwareContext(
     val gpuBusyPercent: Int? = null,
 ) {
     /** Serialises this context to a wire-format map, omitting null fields. */
-    fun toMap(): Map<String, Any?> = mapOf(
-        "thermal" to mapOf(
-            "state" to thermalState,
-            "state_raw" to thermalStateRaw,
-            "cpu_temp_celsius" to cpuTempCelsius,
-        ).filterValues { it != null }.ifEmpty { null },
-        "battery_level" to batteryLevel,
-        "battery_charging" to batteryCharging,
-        "memory_available_bytes" to memoryAvailableBytes,
-        "cpu_freq_mhz" to cpuFreqMhz,
-        "cpu_freq_max_mhz" to cpuFreqMaxMhz,
-        "accelerator_actual" to acceleratorActual?.value,
-        "gpu_busy_percent" to gpuBusyPercent,
-    ).filterValues { it != null }
+    fun toMap(): Map<String, Any?> = buildMap {
+        val thermal = buildMap<String, Any?> {
+            putIfNotNull("state", thermalState)
+            putIfNotNull("state_raw", thermalStateRaw)
+            putIfNotNull("cpu_temp_celsius", cpuTempCelsius)
+        }.ifEmpty { null }
+        putIfNotNull("thermal", thermal)
+        putIfNotNull("battery_level", batteryLevel)
+        putIfNotNull("battery_charging", batteryCharging)
+        putIfNotNull("memory_available_bytes", memoryAvailableBytes)
+        putIfNotNull("cpu_freq_mhz", cpuFreqMhz)
+        putIfNotNull("cpu_freq_max_mhz", cpuFreqMaxMhz)
+        putIfNotNull("accelerator_actual", acceleratorActual?.value)
+        putIfNotNull("gpu_busy_percent", gpuBusyPercent)
+    }
 }
 
 /**
@@ -341,18 +350,18 @@ fun buildInferenceEvent(
         "step_index" to stepIndex,
         "conversation_id" to conversationId,
         "attributes" to attributes,
-        "inference" to mapOf(
-            "inference_id" to inferenceId,
-            "duration_ms" to durationMs,
-            "input_modality" to inputModality,
-            "output_modality" to outputModality,
-            "input_meta" to inputMeta,
-            "output_meta" to outputMeta,
-            "generation_config" to generationConfig,
-            "hardware" to hardware?.toMap()?.ifEmpty { null },
-            "success" to success,
-            "error_code" to errorCode,
-        ).filterValues { it != null },
+        "inference" to buildMap<String, Any?> {
+            put("inference_id", inferenceId)
+            put("duration_ms", durationMs)
+            putIfNotNull("input_modality", inputModality)
+            putIfNotNull("output_modality", outputModality)
+            putIfNotNull("input_meta", inputMeta)
+            putIfNotNull("output_meta", outputMeta)
+            putIfNotNull("generation_config", generationConfig)
+            putIfNotNull("hardware", hardware?.toMap()?.ifEmpty { null })
+            put("success", success)
+            putIfNotNull("error_code", errorCode)
+        },
         "__we_inference_id" to inferenceId,
     ).also { it.values.removeAll { v -> v == null } }
 }
