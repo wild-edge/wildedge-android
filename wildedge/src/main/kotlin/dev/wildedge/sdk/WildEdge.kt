@@ -10,10 +10,10 @@ import android.os.Looper
 import android.util.Log
 import dev.wildedge.sdk.events.buildMemoryWarningEvent
 import dev.wildedge.sdk.events.buildSpanEvent
-import dev.wildedge.sdk.events.isoNow
+import dev.wildedge.sdk.events.newId
+import dev.wildedge.sdk.events.toIsoString
 import java.io.File
 import java.net.URI
-import java.util.UUID
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -109,7 +109,7 @@ class WildEdge internal constructor(
         block: (SpanContext) -> T,
     ): T = runSpan(
         name = name,
-        traceId = parent?.traceId ?: UUID.randomUUID().toString(),
+        traceId = parent?.traceId ?: newId(),
         parentSpanId = parent?.spanId,
         kind = kind,
         attributes = attributes,
@@ -129,8 +129,8 @@ class WildEdge internal constructor(
         val resolvedRunId = runId ?: parent?.runId
         val resolvedAgentId = agentId ?: parent?.agentId
         val ctx = SpanContext(
-            traceId = parent?.traceId ?: UUID.randomUUID().toString(),
-            spanId = UUID.randomUUID().toString(),
+            traceId = parent?.traceId ?: newId(),
+            spanId = newId(),
             parentSpanId = parent?.spanId,
             kind = kind,
             runId = resolvedRunId,
@@ -169,7 +169,7 @@ class WildEdge internal constructor(
     ): T {
         val ctx = SpanContext(
             traceId = traceId,
-            spanId = UUID.randomUUID().toString(),
+            spanId = newId(),
             parentSpanId = parentSpanId,
             kind = kind,
             runId = runId,
@@ -254,8 +254,8 @@ class WildEdge internal constructor(
             )
             val modelRegistry = ModelRegistry(regFile)
             val transmitter = Transmitter(host, secret)
-            val sessionId = UUID.randomUUID().toString()
-            val createdAt = isoNow()
+            val sessionId = newId()
+            val createdAt = System.currentTimeMillis().toIsoString()
 
             val consumer = Consumer(
                 queue = eventQueue,
