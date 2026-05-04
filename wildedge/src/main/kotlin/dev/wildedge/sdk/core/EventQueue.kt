@@ -1,6 +1,5 @@
 package dev.wildedge.sdk
 
-import java.util.LinkedList
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -9,7 +8,7 @@ internal class EventQueue(
     private val strict: Boolean = false,
     private val onOverflow: ((dropped: Int) -> Unit)? = null,
 ) {
-    private val queue: LinkedList<MutableMap<String, Any?>> = LinkedList()
+    private val queue = ArrayDeque<MutableMap<String, Any?>>(maxSize)
     private val lock = ReentrantLock()
 
     fun add(event: MutableMap<String, Any?>) {
