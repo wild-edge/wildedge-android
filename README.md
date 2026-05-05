@@ -345,6 +345,27 @@ override fun onTerminate() {
 
 `close()` is main-thread safe. On the main thread it flushes asynchronously; off the main thread it blocks until the flush timeout (default 5 seconds).
 
+## Diagnostics
+
+Inspect the SDK's internal state at any point:
+
+```kotlin
+val d = wildEdge.diagnostics
+
+Log.d("wildedge", "pending events: ${wildEdge.pendingCount}")
+Log.d("wildedge", "queue heap:     ${d.eventQueueSizeBytes} bytes")
+Log.d("wildedge", "queue JSON:     ${d.eventQueueJsonBytes} bytes")
+```
+
+| Field | Description |
+|---|---|
+| `pendingCount` | Number of events queued and not yet delivered |
+| `eventQueueSizeBytes` | Estimated JVM heap bytes consumed by queued events (ART object-graph walk) |
+| `eventQueueJsonBytes` | Total size of queued events serialized as UTF-8 JSON — matches the wire payload size |
+
+Both size fields reflect the current snapshot; call `diagnostics` again to get updated values.
+The noop client always returns `0` for both.
+
 ## AI-assisted integration
 
 Paste the prompt below into your coding agent (Claude Code, Cursor, Copilot, etc.) to wire up WildEdge across your codebase automatically.
