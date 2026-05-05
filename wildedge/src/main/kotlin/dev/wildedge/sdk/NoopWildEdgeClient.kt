@@ -77,4 +77,5 @@ internal class NoopWildEdgeClient : WildEdgeClient, SpanOwner {
     override fun flush(timeoutMs: Long) = Unit
     override fun close(timeoutMs: Long) = Unit
     override val pendingCount: Int get() = 0
+    override val diagnostics: SdkDiagnostics get() = SdkDiagnostics(eventQueueSizeBytes = 0, eventQueueJsonBytes = 0)
 }

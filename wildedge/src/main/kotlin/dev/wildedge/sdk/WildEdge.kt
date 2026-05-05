@@ -207,6 +207,12 @@ class WildEdge internal constructor(
 
     override val pendingCount: Int get() = queue.length()
 
+    override val diagnostics: SdkDiagnostics
+        get() = SdkDiagnostics(
+            eventQueueSizeBytes = queue.estimateSizeBytes(),
+            eventQueueJsonBytes = queue.estimateJsonBytes(),
+        )
+
     // DSL builder
 
     /** DSL builder for configuring and constructing a [WildEdgeClient]. */

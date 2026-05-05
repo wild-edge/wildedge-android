@@ -49,6 +49,9 @@ interface WildEdgeClient {
     /** Number of events queued and not yet delivered. */
     val pendingCount: Int
 
+    /** Returns a point-in-time snapshot of SDK internal state. */
+    val diagnostics: SdkDiagnostics
+
     /** Factory methods for [WildEdgeClient]. */
     companion object {
         /** Returns a no-op client that silently discards all events. */
