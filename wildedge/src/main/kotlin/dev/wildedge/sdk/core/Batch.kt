@@ -1,7 +1,7 @@
 package dev.wildedge.sdk
 
-import dev.wildedge.sdk.events.isoNow
-import java.util.UUID
+import dev.wildedge.sdk.events.newId
+import dev.wildedge.sdk.events.toIsoString
 
 internal fun buildBatch(
     device: DeviceInfo,
@@ -13,6 +13,7 @@ internal fun buildBatch(
 ): String {
     val strippedEvents = events.map { event ->
         event.filterKeys { !it.startsWith("__we_") }
+            .mapValues { (k, v) -> if (k == "timestamp" && v is Long) v.toIsoString() else v }
     }
 
     val batch = mutableMapOf<String, Any?>(
@@ -20,9 +21,9 @@ internal fun buildBatch(
         "device" to device.toMap(),
         "models" to models,
         "session_id" to sessionId,
-        "batch_id" to UUID.randomUUID().toString(),
+        "batch_id" to newId(),
         "created_at" to createdAt,
-        "sent_at" to isoNow(),
+        "sent_at" to System.currentTimeMillis().toIsoString(),
         "events" to strippedEvents,
     )
 

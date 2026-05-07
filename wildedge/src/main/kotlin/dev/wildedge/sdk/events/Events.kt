@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package dev.wildedge.sdk.events
 
 import dev.wildedge.sdk.Config
@@ -5,15 +7,46 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
-import java.util.UUID
+import java.util.concurrent.ThreadLocalRandom
 
-internal fun isoNow(): String {
-    val fmt = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
-    fmt.timeZone = TimeZone.getTimeZone("UTC")
-    return fmt.format(Date())
+private val HEX_CHARS = "0123456789abcdef".toCharArray()
+
+private val isoFormatter = ThreadLocal.withInitial {
+    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).also {
+        it.timeZone = TimeZone.getTimeZone("UTC")
+    }
 }
 
-internal fun newEventId() = UUID.randomUUID().toString()
+internal fun Long.toIsoString(): String = isoFormatter.get()!!.format(Date(this))
+
+@Suppress("MagicNumber")
+internal fun newId(): String {
+    val rng = ThreadLocalRandom.current()
+    val hi = rng.nextLong()
+    val lo = rng.nextLong()
+    return buildString(36) {
+        appendHex(hi ushr 32, 8)
+        append('-')
+        appendHex(hi ushr 16, 4)
+        append('-')
+        appendHex(hi, 4)
+        append('-')
+        appendHex(lo ushr 48, 4)
+        append('-')
+        appendHex(lo, 12)
+    }
+}
+
+@Suppress("MagicNumber")
+private fun StringBuilder.appendHex(value: Long, digits: Int) {
+    for (shift in (digits - 1) * 4 downTo 0 step 4) {
+        append(HEX_CHARS[(value ushr shift and 0xF).toInt()])
+    }
+}
+
+private fun MutableMap<String, Any?>.putIfNotNull(key: String, value: Any?) {
+    if (value != null) put(key, value)
+}
 
 /**
  * Snapshot of device hardware state at inference time.
@@ -44,20 +77,21 @@ data class HardwareContext(
     val gpuBusyPercent: Int? = null,
 ) {
     /** Serialises this context to a wire-format map, omitting null fields. */
-    fun toMap(): Map<String, Any?> = mapOf(
-        "thermal" to mapOf(
-            "state" to thermalState,
-            "state_raw" to thermalStateRaw,
-            "cpu_temp_celsius" to cpuTempCelsius,
-        ).filterValues { it != null }.ifEmpty { null },
-        "battery_level" to batteryLevel,
-        "battery_charging" to batteryCharging,
-        "memory_available_bytes" to memoryAvailableBytes,
-        "cpu_freq_mhz" to cpuFreqMhz,
-        "cpu_freq_max_mhz" to cpuFreqMaxMhz,
-        "accelerator_actual" to acceleratorActual?.value,
-        "gpu_busy_percent" to gpuBusyPercent,
-    ).filterValues { it != null }
+    fun toMap(): Map<String, Any?> = buildMap {
+        val thermal = buildMap<String, Any?> {
+            putIfNotNull("state", thermalState)
+            putIfNotNull("state_raw", thermalStateRaw)
+            putIfNotNull("cpu_temp_celsius", cpuTempCelsius)
+        }.ifEmpty { null }
+        putIfNotNull("thermal", thermal)
+        putIfNotNull("battery_level", batteryLevel)
+        putIfNotNull("battery_charging", batteryCharging)
+        putIfNotNull("memory_available_bytes", memoryAvailableBytes)
+        putIfNotNull("cpu_freq_mhz", cpuFreqMhz)
+        putIfNotNull("cpu_freq_max_mhz", cpuFreqMaxMhz)
+        putIfNotNull("accelerator_actual", acceleratorActual?.value)
+        putIfNotNull("gpu_busy_percent", gpuBusyPercent)
+    }
 }
 
 /**
@@ -302,11 +336,11 @@ fun buildInferenceEvent(
     conversationId: String? = null,
     attributes: Map<String, Any?>? = null,
 ): MutableMap<String, Any?> {
-    val inferenceId = newEventId()
+    val inferenceId = newId()
     return mutableMapOf(
-        "event_id" to newEventId(),
+        "event_id" to newId(),
         "event_type" to "inference",
-        "timestamp" to isoNow(),
+        "timestamp" to System.currentTimeMillis(),
         "model_id" to modelId,
         "trace_id" to traceId,
         "span_id" to spanId,
@@ -316,18 +350,18 @@ fun buildInferenceEvent(
         "step_index" to stepIndex,
         "conversation_id" to conversationId,
         "attributes" to attributes,
-        "inference" to mapOf(
-            "inference_id" to inferenceId,
-            "duration_ms" to durationMs,
-            "input_modality" to inputModality,
-            "output_modality" to outputModality,
-            "input_meta" to inputMeta,
-            "output_meta" to outputMeta,
-            "generation_config" to generationConfig,
-            "hardware" to hardware?.toMap()?.ifEmpty { null },
-            "success" to success,
-            "error_code" to errorCode,
-        ).filterValues { it != null },
+        "inference" to buildMap<String, Any?> {
+            put("inference_id", inferenceId)
+            put("duration_ms", durationMs)
+            putIfNotNull("input_modality", inputModality)
+            putIfNotNull("output_modality", outputModality)
+            putIfNotNull("input_meta", inputMeta)
+            putIfNotNull("output_meta", outputMeta)
+            putIfNotNull("generation_config", generationConfig)
+            putIfNotNull("hardware", hardware?.toMap()?.ifEmpty { null })
+            put("success", success)
+            putIfNotNull("error_code", errorCode)
+        },
         "__we_inference_id" to inferenceId,
     ).also { it.values.removeAll { v -> v == null } }
 }
@@ -344,9 +378,9 @@ fun buildModelLoadEvent(
     threads: Int? = null,
     gpuLayers: Int? = null,
 ): Map<String, Any?> = mapOf(
-    "event_id" to newEventId(),
+    "event_id" to newId(),
     "event_type" to "model_load",
-    "timestamp" to isoNow(),
+    "timestamp" to System.currentTimeMillis(),
     "model_id" to modelId,
     "load" to mapOf(
         "duration_ms" to durationMs,
@@ -368,9 +402,9 @@ fun buildModelUnloadEvent(
     memoryFreedBytes: Long? = null,
     uptimeMs: Long? = null,
 ): Map<String, Any?> = mapOf(
-    "event_id" to newEventId(),
+    "event_id" to newId(),
     "event_type" to "model_unload",
-    "timestamp" to isoNow(),
+    "timestamp" to System.currentTimeMillis(),
     "model_id" to modelId,
     "unload" to mapOf(
         "duration_ms" to durationMs,
@@ -394,9 +428,9 @@ fun buildModelDownloadEvent(
     success: Boolean,
     errorCode: String? = null,
 ): Map<String, Any?> = mapOf(
-    "event_id" to newEventId(),
+    "event_id" to newId(),
     "event_type" to "model_download",
-    "timestamp" to isoNow(),
+    "timestamp" to System.currentTimeMillis(),
     "model_id" to modelId,
     "download" to mapOf(
         "source_url" to sourceUrl,
@@ -420,9 +454,9 @@ fun buildFeedbackEvent(
     delayMs: Int? = null,
     editDistance: Int? = null,
 ): Map<String, Any?> = mapOf(
-    "event_id" to newEventId(),
+    "event_id" to newId(),
     "event_type" to "feedback",
-    "timestamp" to isoNow(),
+    "timestamp" to System.currentTimeMillis(),
     "model_id" to modelId,
     "feedback" to mapOf(
         "related_inference_id" to relatedInferenceId,
@@ -440,9 +474,9 @@ fun buildErrorEvent(
     stackTraceHash: String? = null,
     relatedEventId: String? = null,
 ): Map<String, Any?> = mapOf(
-    "event_id" to newEventId(),
+    "event_id" to newId(),
     "event_type" to "error",
-    "timestamp" to isoNow(),
+    "timestamp" to System.currentTimeMillis(),
     "model_id" to modelId,
     "error" to mapOf(
         "error_code" to errorCode,
@@ -465,9 +499,9 @@ fun buildSpanEvent(
     runId: String? = null,
     agentId: String? = null,
 ): Map<String, Any?> = mapOf(
-    "event_id" to newEventId(),
+    "event_id" to newId(),
     "event_type" to "span",
-    "timestamp" to isoNow(),
+    "timestamp" to System.currentTimeMillis(),
     "trace_id" to traceId,
     "span_id" to spanId,
     "parent_span_id" to parentSpanId,
@@ -490,9 +524,9 @@ fun buildMemoryWarningEvent(
     triggeredUnload: Boolean,
     unloadedModelId: String? = null,
 ): Map<String, Any?> = mapOf(
-    "event_id" to newEventId(),
+    "event_id" to newId(),
     "event_type" to "memory_warning",
-    "timestamp" to isoNow(),
+    "timestamp" to System.currentTimeMillis(),
     "model_id" to null,
     "memory_warning" to mapOf(
         "level" to level,

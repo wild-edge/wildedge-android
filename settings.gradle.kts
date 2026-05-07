@@ -16,6 +16,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "wildedge-android"
 include(":wildedge")
+include(":benchmark")
 include(":samples:image-classification")
 include(":samples:local-llm")
 include(":samples:local-llm-agent")

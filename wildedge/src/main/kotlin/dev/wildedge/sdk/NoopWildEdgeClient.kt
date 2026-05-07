@@ -1,6 +1,6 @@
 package dev.wildedge.sdk
 
-import java.util.UUID
+import dev.wildedge.sdk.events.newId
 
 internal class NoopWildEdgeClient : WildEdgeClient, SpanOwner {
     override fun registerModel(modelId: String, info: ModelInfo): ModelHandle =
@@ -24,7 +24,7 @@ internal class NoopWildEdgeClient : WildEdgeClient, SpanOwner {
         block: (SpanContext) -> T,
     ): T = runSpan(
         name = name,
-        traceId = parent?.traceId ?: UUID.randomUUID().toString(),
+        traceId = parent?.traceId ?: newId(),
         parentSpanId = parent?.spanId,
         kind = kind,
         attributes = attributes,
@@ -42,8 +42,8 @@ internal class NoopWildEdgeClient : WildEdgeClient, SpanOwner {
         agentId: String?,
     ): Span = Span(
         SpanContext(
-            traceId = parent?.traceId ?: UUID.randomUUID().toString(),
-            spanId = UUID.randomUUID().toString(),
+            traceId = parent?.traceId ?: newId(),
+            spanId = newId(),
             parentSpanId = parent?.spanId,
             kind = kind,
             runId = runId ?: parent?.runId,
@@ -65,7 +65,7 @@ internal class NoopWildEdgeClient : WildEdgeClient, SpanOwner {
     ): T = block(
         SpanContext(
             traceId = traceId,
-            spanId = UUID.randomUUID().toString(),
+            spanId = newId(),
             parentSpanId = parentSpanId,
             kind = kind,
             runId = runId,

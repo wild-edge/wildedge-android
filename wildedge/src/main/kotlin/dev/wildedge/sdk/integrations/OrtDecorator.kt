@@ -23,6 +23,7 @@ class OrtDecorator(
     accelerator: dev.wildedge.sdk.Accelerator? = null,
     private val labels: List<String>? = null,
     private val numClasses: Int = labels?.size ?: 0,
+    loadDurationMs: Int = 0,
 ) : AutoCloseable {
 
     val handle = wildEdge.registerModel(
@@ -34,7 +35,10 @@ class OrtDecorator(
             modelFormat = "onnx",
             quantization = quantization,
         ),
-    ).also { it.acceleratorActual = accelerator }
+    ).also {
+        it.trackLoad(durationMs = loadDurationMs, accelerator = accelerator, coldStart = true)
+        it.acceleratorActual = accelerator
+    }
 
     private val outputModality = if (numClasses > 0) OutputModality.Classification else OutputModality.Tensor
 
@@ -88,6 +92,7 @@ fun WildEdgeClient.decorate(
     accelerator: dev.wildedge.sdk.Accelerator? = null,
     labels: List<String>? = null,
     numClasses: Int = labels?.size ?: 0,
+    loadDurationMs: Int = 0,
 ): OrtDecorator = OrtDecorator(
     session,
     this,
@@ -97,7 +102,33 @@ fun WildEdgeClient.decorate(
     accelerator = accelerator,
     labels = labels,
     numClasses = numClasses,
+    loadDurationMs = loadDurationMs,
 )
+
+/** Creates an [OrtDecorator], inferring model metadata from [modelFile], timing the [load] block. */
+fun WildEdgeClient.decorate(
+    modelFile: File,
+    modelVersion: String? = null,
+    accelerator: dev.wildedge.sdk.Accelerator? = null,
+    labels: List<String>? = null,
+    numClasses: Int = labels?.size ?: 0,
+    load: () -> OrtSession,
+): OrtDecorator {
+    val start = System.currentTimeMillis()
+    val session = load()
+    val loadDurationMs = (System.currentTimeMillis() - start).toInt()
+    return OrtDecorator(
+        session,
+        this,
+        modelId = inferModelId(modelFile),
+        modelVersion = modelVersion,
+        quantization = inferQuantization(modelFile),
+        accelerator = accelerator,
+        labels = labels,
+        numClasses = numClasses,
+        loadDurationMs = loadDurationMs,
+    )
+}
 
 /** Creates an [OrtDecorator] with explicit model metadata. */
 fun WildEdgeClient.decorate(
@@ -108,4 +139,25 @@ fun WildEdgeClient.decorate(
     accelerator: dev.wildedge.sdk.Accelerator? = null,
     labels: List<String>? = null,
     numClasses: Int = labels?.size ?: 0,
-): OrtDecorator = OrtDecorator(session, this, modelId, modelVersion, quantization, accelerator, labels, numClasses)
+    loadDurationMs: Int = 0,
+): OrtDecorator = OrtDecorator(
+    session, this, modelId, modelVersion, quantization, accelerator, labels, numClasses, loadDurationMs,
+)
+
+/** Creates an [OrtDecorator] with explicit model metadata, timing the [load] block. */
+fun WildEdgeClient.decorate(
+    modelId: String,
+    modelVersion: String? = null,
+    quantization: String? = null,
+    accelerator: dev.wildedge.sdk.Accelerator? = null,
+    labels: List<String>? = null,
+    numClasses: Int = labels?.size ?: 0,
+    load: () -> OrtSession,
+): OrtDecorator {
+    val start = System.currentTimeMillis()
+    val session = load()
+    val loadDurationMs = (System.currentTimeMillis() - start).toInt()
+    return OrtDecorator(
+        session, this, modelId, modelVersion, quantization, accelerator, labels, numClasses, loadDurationMs,
+    )
+}

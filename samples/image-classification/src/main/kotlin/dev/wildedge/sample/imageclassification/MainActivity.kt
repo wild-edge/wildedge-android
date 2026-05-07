@@ -76,18 +76,10 @@ class MainActivity : AppCompatActivity() {
 
         log("Loading interpreter...")
         val (decorator, inputShape, outputShape) = withContext(Dispatchers.IO) {
-            val interpreter = Interpreter(modelFile, Interpreter.Options().apply { numThreads = 2 })
-            val inShape = interpreter.getInputTensor(0).shape()
-            val outShape = interpreter.getOutputTensor(0).shape()
-            Triple(
-                wildEdge.decorate(
-                    interpreter,
-                    modelId = "mobilenet-v1",
-                    quantization = "uint8",
-                ),
-                inShape,
-                outShape,
-            )
+            val decorator = wildEdge.decorate(modelId = "mobilenet-v1", quantization = "uint8") {
+                Interpreter(modelFile, Interpreter.Options().apply { numThreads = 2 })
+            }
+            Triple(decorator, decorator.getInputTensor(0).shape(), decorator.getOutputTensor(0).shape())
         }
 
         if (inputShape.size != 4 || inputShape[0] != 1 || inputShape[3] != 3) {

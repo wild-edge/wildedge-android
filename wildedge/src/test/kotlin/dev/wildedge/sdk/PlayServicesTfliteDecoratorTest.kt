@@ -37,6 +37,10 @@ class PlayServicesTfliteDecoratorTest {
         override fun close() { closedCalled = true }
     }
 
+    @Suppress("UNCHECKED_CAST")
+    private fun EventQueue.inferenceBlock(): Map<String, Any?> =
+        peekMany(10).first { it["event_type"] == "inference" }["inference"] as Map<String, Any?>
+
     private fun makeDecorator(): Triple<FakeInterpreter, WildEdgeClient, PlayServicesTfliteDecorator> {
         val fake = FakeInterpreter()
         val wildEdge = testWildEdge()
@@ -75,7 +79,7 @@ class PlayServicesTfliteDecoratorTest {
             decorator.run(Any(), Any())
         }
 
-        assertEquals(1, wildEdge.pendingCount)
+        assertEquals(2, wildEdge.pendingCount) // 1 load + 1 inference failure
         assertNotNull(decorator.handle.lastInferenceId)
     }
 
@@ -87,7 +91,7 @@ class PlayServicesTfliteDecoratorTest {
             decorator.runForMultipleInputsOutputs(arrayOf(Any()), mapOf(0 to Any()))
         }
 
-        assertEquals(1, wildEdge.pendingCount)
+        assertEquals(2, wildEdge.pendingCount) // 1 load + 1 inference failure
         assertNotNull(decorator.handle.lastInferenceId)
     }
 
@@ -106,9 +110,7 @@ class PlayServicesTfliteDecoratorTest {
         val (wildEdge, queue) = testWildEdgeWithQueue()
         val decorator = PlayServicesTfliteDecorator(FakeInterpreter(), wildEdge, modelId = "m")
         decorator.run(Any(), Array(1) { FloatArray(3) { 1f } })
-        @Suppress("UNCHECKED_CAST")
-        val inference = queue.peekMany(1).first()["inference"] as Map<String, Any?>
-        assertNull(inference["output_meta"])
+        assertNull(queue.inferenceBlock()["output_meta"])
     }
 
     @Test fun outputMetaPresentWhenNumClassesSet() {
@@ -116,12 +118,10 @@ class PlayServicesTfliteDecoratorTest {
         val output = Array(1) { FloatArray(3) { 0f }.also { it[1] = 10f } }
         val decorator = PlayServicesTfliteDecorator(FakeInterpreter(), wildEdge, modelId = "m", numClasses = 3)
         decorator.run(Any(), output)
-        @Suppress("UNCHECKED_CAST")
-        val inference = queue.peekMany(1).first()["inference"] as Map<String, Any?>
+        val inference = queue.inferenceBlock()
         assertNotNull(inference["output_meta"])
         @Suppress("UNCHECKED_CAST")
-        val meta = inference["output_meta"] as Map<String, Any?>
-        assertEquals("classification", meta["task"])
+        assertEquals("classification", (inference["output_meta"] as Map<String, Any?>)["task"])
     }
 
     @Test fun outputMetaUsesLabelsWhenProvided() {
@@ -131,10 +131,10 @@ class PlayServicesTfliteDecoratorTest {
         val decorator = PlayServicesTfliteDecorator(FakeInterpreter(), wildEdge, modelId = "m", labels = labels)
         decorator.run(Any(), output)
         @Suppress("UNCHECKED_CAST")
-        val inference = queue.peekMany(1).first()["inference"] as Map<String, Any?>
+        val outputMeta = queue.inferenceBlock()["output_meta"] as Map<String, Any?>
 
         @Suppress("UNCHECKED_CAST")
-        val topK = (inference["output_meta"] as Map<String, Any?>)["top_k"] as List<Map<String, Any?>>
+        val topK = outputMeta["top_k"] as List<Map<String, Any?>>
         assertEquals("bird", topK.first()["label"])
     }
 }
