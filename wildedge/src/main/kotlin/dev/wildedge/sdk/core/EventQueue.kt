@@ -62,11 +62,35 @@ internal class EventQueue(
 // ART (Android 5+, 64-bit, compressed references) object layout constants.
 // Object header:  klass(4) + monitor(4) = 8 bytes. All objects 8-byte aligned.
 private const val OBJECT_HEADER = 8L
-private const val REF_FIELD = 4L         // compressed object reference
-private const val ARRAY_HEADER = 16L     // header(8) + length(4) + padding(4)
+private const val REF_FIELD = 4L // compressed object reference
+private const val ARRAY_HEADER = 16L // header(8) + length(4) + padding(4)
 
 // LinkedList.Node: header(8) + item_ref(4) + next_ref(4) + prev_ref(4) = 20 → pad to 24
 private const val LINKED_LIST_NODE_BYTES = 24L
+
+// String: header(8) + count(4) + hash(4) + value_ref(4) = 20 → pad to 24
+private const val STRING_OBJECT_BYTES = 24L
+
+// Conservative char width: ART compact strings use 1 byte for ASCII (API 26+) but 2 is safe upper bound
+private const val CHARS_PER_CODE_UNIT = 2L
+
+// Primitive wrappers: header(8) + largest field (long/double = 8) = 16, already aligned
+private const val PRIMITIVE_WRAPPER_BYTES = 16L
+
+// LinkedHashMap: header(8) + HashMap fields(24) + LinkedHashMap fields(9) = 41 → pad to 48
+private const val LINKED_HASH_MAP_OBJECT_BYTES = 48L
+
+// LinkedHashMap.Entry: header(8) + hash(4) + key_ref(4) + value_ref(4)
+//   + next_ref(4) + before_ref(4) + after_ref(4) = 32
+private const val LINKED_HASH_MAP_ENTRY_BYTES = 32L
+
+// HashMap default initial capacity and load factor (3/4 = 0.75)
+private const val HASH_MAP_INITIAL_CAPACITY = 16
+private const val LOAD_FACTOR_NUM = 3
+private const val LOAD_FACTOR_DEN = 4
+
+// ArrayList: header(8) + elementData_ref(4) + size(4) + modCount(4) = 20 → pad to 24
+private const val ARRAY_LIST_OBJECT_BYTES = 24L
 
 @Suppress("UNCHECKED_CAST")
 private fun artHeapSize(obj: Any?): Long = when (obj) {
@@ -74,14 +98,12 @@ private fun artHeapSize(obj: Any?): Long = when (obj) {
 
     is String -> {
         // String object: header(8) + count(4) + hash(4) + value_ref(4) = 20 → pad to 24
-        // char[]: array_header(16) + 2 bytes per char (conservative; ART compact strings
-        //         use 1 byte for ASCII on API 26+, but 2 bytes is the safe upper bound)
-        24L + ARRAY_HEADER + obj.length * 2L
+        STRING_OBJECT_BYTES + ARRAY_HEADER + obj.length * CHARS_PER_CODE_UNIT
     }
 
     // Primitive wrappers: header(8) + field ≤ 8 bytes → all pad to 16
-    is Boolean, is Byte, is Short, is Char, is Int, is Float -> 16L
-    is Long, is Double -> 16L
+    is Boolean, is Byte, is Short, is Char, is Int, is Float -> PRIMITIVE_WRAPPER_BYTES
+    is Long, is Double -> PRIMITIVE_WRAPPER_BYTES
 
     is Map<*, *> -> {
         // LinkedHashMap object: header(8) + HashMap fields(table_ref,entrySet_ref,size,
@@ -91,11 +113,11 @@ private fun artHeapSize(obj: Any?): Long = when (obj) {
         //   capacity = next power-of-2 ≥ size/0.75 (min 16 for default initial capacity)
         // LinkedHashMap.Entry per mapping: header(8) + hash(4) + key_ref(4) + value_ref(4)
         //   + next_ref(4) + before_ref(4) + after_ref(4) = 32 bytes (already aligned)
-        var cap = 16
-        while (cap * 3 / 4 < obj.size) cap = cap shl 1
-        val mapObject = 48L
+        var cap = HASH_MAP_INITIAL_CAPACITY
+        while (cap * LOAD_FACTOR_NUM / LOAD_FACTOR_DEN < obj.size) cap = cap shl 1
+        val mapObject = LINKED_HASH_MAP_OBJECT_BYTES
         val tableArray = ARRAY_HEADER + cap * REF_FIELD
-        val entries = obj.size * 32L
+        val entries = obj.size * LINKED_HASH_MAP_ENTRY_BYTES
         val content = (obj as Map<String, Any?>).entries.sumOf { (k, v) ->
             artHeapSize(k) + artHeapSize(v)
         }
@@ -105,11 +127,11 @@ private fun artHeapSize(obj: Any?): Long = when (obj) {
     is List<*> -> {
         // ArrayList: header(8) + elementData_ref(4) + size(4) + modCount(4) = 20 → pad to 24
         // Object[]: array_header(16) + size * ref(4)
-        val listObject = 24L
+        val listObject = ARRAY_LIST_OBJECT_BYTES
         val backingArray = ARRAY_HEADER + obj.size * REF_FIELD
         val content = obj.sumOf { artHeapSize(it) }
         listObject + backingArray + content
     }
 
-    else -> OBJECT_HEADER  // unknown boxed type; count at least its header
+    else -> OBJECT_HEADER // unknown boxed type; count at least its header
 }
