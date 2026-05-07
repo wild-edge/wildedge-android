@@ -88,3 +88,72 @@ jobs:
 
       - name: Build release APKs
         run: ./gradlew :samples:image-classification:assembleRelease :samples:local-llm:assembleRelease :samples:local-llm-agent:assembleRelease :samples:cloud-llm:assembleRelease --no-daemon
+
+  sdk-impact:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+
+      - name: Build release AAR and sample APK
+        run: ./gradlew :wildedge:bundleReleaseAar :samples:image-classification:assembleRelease --no-daemon
+
+      - name: Report SDK impact
+        run: |
+          set -euo pipefail
+
+          AAR=$(find wildedge/build/outputs/aar -name "*-release.aar" | head -1)
+          APK=$(find samples/image-classification/build/outputs/apk/release -name "*.apk" | head -1)
+          APKANALYZER=$(find "$ANDROID_HOME" -name "apkanalyzer" -type f 2>/dev/null | head -1)
+
+          bytes_to_kb() { echo "scale=1; $1 / 1024" | bc; }
+
+          AAR_BYTES=$(wc -c < "$AAR")
+          CLASSES_JAR_BYTES=$(unzip -l "$AAR" | awk '/classes\.jar/ {print $1; exit}')
+          APK_BYTES=$(wc -c < "$APK")
+
+          {
+            echo "## SDK Impact Report"
+            echo ""
+            echo "### AAR (\`wildedge-android-release.aar\`)"
+            echo "| Artifact | Size |"
+            echo "|----------|------|"
+            printf "| AAR file | %s KB |\n" "$(bytes_to_kb "$AAR_BYTES")"
+            printf "| classes.jar | %s KB |\n" "$(bytes_to_kb "${CLASSES_JAR_BYTES:-0}")"
+            echo ""
+            echo "### Sample App APK (\`image-classification\`, R8 enabled)"
+            echo "| Metric | Value |"
+            echo "|--------|-------|"
+            printf "| APK file size | %s KB |\n" "$(bytes_to_kb "$APK_BYTES")"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+          if [ -n "$APKANALYZER" ]; then
+            DL_BYTES=$("$APKANALYZER" apk download-size "$APK" 2>/dev/null || true)
+            DEX_REFS=$("$APKANALYZER" dex references "$APK" 2>/dev/null || true)
+
+            {
+              if [ -n "$DL_BYTES" ]; then
+                printf "| Download size (gzip) | %s KB |\n" "$(bytes_to_kb "$DL_BYTES")"
+              fi
+              if [ -n "$DEX_REFS" ]; then
+                echo ""
+                echo "### DEX Method References (total in APK)"
+                echo "| Scope | Count |"
+                echo "|-------|-------|"
+                echo "| All references | $DEX_REFS |"
+                WILDEDGE_REFS=$("$APKANALYZER" dex packages --defined-only "$APK" 2>/dev/null \
+                  | awk -F'\t' '/dev\.wildedge/ {sum += $NF} END {if (sum) print sum}' || true)
+                if [ -n "$WILDEDGE_REFS" ]; then
+                  echo "| \`dev.wildedge\` defined methods | $WILDEDGE_REFS |"
+                fi
+              fi
+            } | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
