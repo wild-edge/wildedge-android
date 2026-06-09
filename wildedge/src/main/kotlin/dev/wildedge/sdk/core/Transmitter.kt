@@ -17,6 +17,7 @@ internal class TransmitError(message: String) : IOException(message)
 internal class Transmitter(
     private val host: String,
     private val apiKey: String,
+    private val enableCompression: Boolean = Config.DEFAULT_ENABLE_COMPRESSION,
     private val timeoutMs: Int = Config.HTTP_TIMEOUT_MS,
 ) {
     @Suppress("MagicNumber")
@@ -29,12 +30,15 @@ internal class Transmitter(
             conn.connectTimeout = timeoutMs
             conn.readTimeout = timeoutMs
             conn.setRequestProperty("Content-Type", "application/json")
-            conn.setRequestProperty("Content-Encoding", "gzip")
             conn.setRequestProperty("X-Project-Secret", apiKey)
             conn.setRequestProperty("User-Agent", Config.SDK_VERSION)
 
-            GZIPOutputStream(conn.outputStream).use { gz ->
-                gz.write(batchJson.toByteArray(Charsets.UTF_8))
+            val payload = batchJson.toByteArray(Charsets.UTF_8)
+            if (enableCompression) {
+                conn.setRequestProperty("Content-Encoding", "gzip")
+                GZIPOutputStream(conn.outputStream).use { it.write(payload) }
+            } else {
+                conn.outputStream.use { it.write(payload) }
             }
 
             val code = conn.responseCode

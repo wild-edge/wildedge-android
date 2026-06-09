@@ -231,6 +231,7 @@ class WildEdge internal constructor(
         var registryFile: File? = null
         var debug: Boolean = System.getenv(Config.ENV_DEBUG) == "true"
         var onDeliveryFailure: ((reason: String, dropped: Int, queueDepth: Int) -> Unit)? = null
+        var enableCompression: Boolean = Config.DEFAULT_ENABLE_COMPRESSION
         var strict: Boolean = false
         var autoTrackMemoryWarnings: Boolean = true
 
@@ -259,7 +260,7 @@ class WildEdge internal constructor(
                 onOverflow = { onDeliveryFailure?.invoke("queue_overflow", it, maxQueueSize) },
             )
             val modelRegistry = ModelRegistry(regFile)
-            val transmitter = Transmitter(host, secret)
+            val transmitter = Transmitter(host, secret, enableCompression)
             val sessionId = UUID.randomUUID().toString()
             val createdAt = isoNow()
 

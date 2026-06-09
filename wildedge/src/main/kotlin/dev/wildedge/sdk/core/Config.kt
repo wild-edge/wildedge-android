@@ -21,6 +21,8 @@ internal object Config {
     const val BACKOFF_MULTIPLIER = 2.0
     const val IDLE_POLL_MS = 5_000L
 
+    const val DEFAULT_ENABLE_COMPRESSION = true
+
     const val HTTP_TIMEOUT_MS = 15_000
     const val ERROR_MSG_MAX_LEN = 200
 

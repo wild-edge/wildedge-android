@@ -62,7 +62,7 @@ class DiagnosticsTest {
             avgTokenEntropy = 1.3f,
             safetyTriggered = false,
         ).toMap(),
-        generationConfig = mapOf("temperature" to 0.7, "top_p" to 0.9, "max_tokens" to 256),
+        generationConfig = GenerationConfig(temperature = 0.7, topP = 0.9, maxTokens = 256),
         hardware = HardwareContext(
             thermalState = "nominal",
             thermalStateRaw = "THERMAL_STATUS_NONE",

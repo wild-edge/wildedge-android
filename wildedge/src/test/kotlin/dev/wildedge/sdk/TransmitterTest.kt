@@ -20,7 +20,8 @@ class TransmitterTest {
 
     @After fun tearDown() { server.shutdown() }
 
-    private fun transmitter() = Transmitter(server.url("/").toString().trimEnd('/'), "test-secret")
+    private fun transmitter(enableCompression: Boolean = true) =
+        Transmitter(server.url("/").toString().trimEnd('/'), "test-secret", enableCompression)
 
     @Test fun sends202AndParsesResponse() {
         server.enqueue(
@@ -82,5 +83,31 @@ class TransmitterTest {
         server.enqueue(MockResponse().setResponseCode(401).setBody("Unauthorized"))
         val resp = transmitter().send("{}")
         assertEquals("unauthorized", resp.status)
+    }
+
+    @Test fun compressionEnabledByDefault() {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(202)
+                .setBody("""{"status":"accepted","batch_id":"b1","events_accepted":1,"events_rejected":0}""")
+        )
+
+        transmitter().send("""{"hello":"world"}""")
+
+        assertEquals("gzip", server.takeRequest().getHeader("Content-Encoding"))
+    }
+
+    @Test fun sendsPlainJsonWhenCompressionDisabled() {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(202)
+                .setBody("""{"status":"accepted","batch_id":"b1","events_accepted":1,"events_rejected":0}""")
+        )
+
+        transmitter(enableCompression = false).send("""{"hello":"world"}""")
+
+        val req = server.takeRequest()
+        assertNull(req.getHeader("Content-Encoding"))
+        assertEquals("""{"hello":"world"}""", req.body.readUtf8())
     }
 }
