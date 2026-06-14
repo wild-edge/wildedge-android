@@ -14,6 +14,7 @@ import dev.wildedge.sdk.events.isoNow
 import java.io.File
 import java.net.URI
 import java.util.UUID
+import java.util.concurrent.Executors
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -30,12 +31,25 @@ class WildEdge internal constructor(
     private val hardwareSampler: HardwareSampler?,
     private val debug: Boolean,
     private var memoryCallbackUnregister: (() -> Unit)? = null,
+    private val attachmentQueue: AttachmentQueue? = null,
+    private val attachmentConsumer: AttachmentConsumer? = null,
+    private val maxAttachmentsPerInference: Int = Config.DEFAULT_MAX_ATTACHMENTS_PER_INFERENCE,
+    private val maxAttachmentSizeBytes: Long = Config.DEFAULT_MAX_ATTACHMENT_SIZE_BYTES,
+    private val attachmentFilter: ((InferenceAttachment) -> Boolean)? = null,
 ) : WildEdgeClient, SpanOwner {
     private val handles = mutableMapOf<String, ModelHandle>()
     private val handlesLock = ReentrantLock()
 
     @Volatile private var closed = false
     private val activeSpan = ThreadLocal<SpanContext?>()
+
+    private val attachmentExecutor = if (attachmentQueue != null) {
+        Executors.newSingleThreadExecutor { r ->
+            Thread(r, "wildedge-attachment-enqueue").also { it.isDaemon = true }
+        }
+    } else {
+        null
+    }
 
     override fun registerModel(modelId: String, info: ModelInfo): ModelHandle {
         if (noop || closed) return ModelHandle(modelId, info, {}, { null })
@@ -47,7 +61,7 @@ class WildEdge internal constructor(
                     hardwareSampler?.snapshot().also { hw ->
                         if (debug) Log.d("wildedge", "hardware snapshot for model=$modelId: $hw")
                     }
-                }, { activeSpan.get() })
+                }, { activeSpan.get() }, ::enqueueAttachments)
             }
         }
     }
@@ -56,6 +70,53 @@ class WildEdge internal constructor(
         if (noop || closed) return
         if (debug) Log.d("wildedge", "queuing event type=${event["event_type"]} model=${event["model_id"]}")
         queue.add(event)
+    }
+
+    internal fun enqueueAttachments(
+        inferenceId: String,
+        inferenceTimestamp: String,
+        attachments: List<InferenceAttachment>,
+    ) {
+        val aq = attachmentQueue ?: return
+        if (noop || closed) return
+        val registeredAt = System.currentTimeMillis()
+        attachmentExecutor?.execute {
+            attachments
+                .asSequence()
+                .filter { attachmentFilter?.invoke(it) ?: true }
+                .take(maxAttachmentsPerInference)
+                .forEach { attachment ->
+                    val (ref, byteSize) = when (val payload = attachment.payload) {
+                        is InferenceAttachment.Payload.Data ->
+                            AttachmentPayloadRef.Bytes(payload.bytes) to payload.bytes.size.toLong()
+                        is InferenceAttachment.Payload.File ->
+                            AttachmentPayloadRef.FilePath(payload.file.absolutePath) to payload.file.length()
+                    }
+                    if (byteSize > maxAttachmentSizeBytes) {
+                        if (debug) {
+                            Log.w("wildedge", "attachment ${attachment.attachmentId} exceeds max size; dropping")
+                        }
+                        return@forEach
+                    }
+                    val mimeType = when (val payload = attachment.payload) {
+                        is InferenceAttachment.Payload.Data -> payload.mimeType
+                        is InferenceAttachment.Payload.File -> payload.mimeType
+                    }
+                    aq.append(
+                        PendingAttachment(
+                            attachmentId = attachment.attachmentId,
+                            inferenceId = inferenceId,
+                            name = attachment.name,
+                            role = attachment.role.value,
+                            mimeType = mimeType,
+                            byteSize = byteSize,
+                            payload = ref,
+                            inferenceTimestamp = inferenceTimestamp,
+                            registeredAt = registeredAt,
+                        ),
+                    )
+                }
+        }
     }
 
     override fun trackMemoryWarning(
@@ -91,6 +152,8 @@ class WildEdge internal constructor(
         closed = true
         memoryCallbackUnregister?.invoke()
         hardwareSampler?.stop()
+        attachmentConsumer?.stop()
+        attachmentExecutor?.shutdown()
         val c = consumer ?: return
         val blocking = !isMainThread()
         if (!blocking && debug) {
@@ -211,6 +274,10 @@ class WildEdge internal constructor(
         get() = SdkDiagnostics(
             eventQueueSizeBytes = queue.estimateSizeBytes(),
             eventQueueJsonBytes = queue.estimateJsonBytes(),
+            attachmentQueueCount = attachmentQueue?.length() ?: 0,
+            attachmentUploadedCount = attachmentConsumer?.uploadedCount?.get() ?: 0,
+            attachmentDropCount = attachmentConsumer?.dropCount?.get() ?: 0,
+            attachmentPermanentFailureCount = attachmentConsumer?.permanentFailureCount?.get() ?: 0,
         )
 
     // DSL builder
@@ -234,6 +301,15 @@ class WildEdge internal constructor(
         var enableCompression: Boolean = Config.DEFAULT_ENABLE_COMPRESSION
         var strict: Boolean = false
         var autoTrackMemoryWarnings: Boolean = true
+        var enableAttachments: Boolean = Config.DEFAULT_ENABLE_ATTACHMENTS
+        var attachmentStorageStrategy: AttachmentStorageStrategy = AttachmentStorageStrategy.File
+        var maxAttachmentsPerInference: Int = Config.DEFAULT_MAX_ATTACHMENTS_PER_INFERENCE
+        var maxAttachmentSizeBytes: Long = Config.DEFAULT_MAX_ATTACHMENT_SIZE_BYTES
+        var maxAttachmentAgeMs: Long = Config.DEFAULT_MAX_ATTACHMENT_AGE_MS
+        var attachmentFlushIntervalMs: Long = Config.DEFAULT_ATTACHMENT_FLUSH_INTERVAL_MS
+        var attachmentTransmitTimeoutMs: Int = Config.ATTACHMENT_HTTP_TIMEOUT_MS
+        var attachmentStoreFile: File? = null
+        var attachmentFilter: ((InferenceAttachment) -> Boolean)? = null
 
         /**
          * Constructs a [WildEdgeClient] from the current builder configuration.
@@ -285,6 +361,8 @@ class WildEdge internal constructor(
                 HardwareSampler(context, it).also { s -> s.start() }
             }
 
+            val (attachmentQueue, attachmentConsumer) = buildAttachmentPipeline(host, secret, filesDir)
+
             if (debug) Log.d("wildedge", "wildedge: initialized session=$sessionId")
 
             val wildEdge = WildEdge(
@@ -294,6 +372,11 @@ class WildEdge internal constructor(
                 consumer = consumer,
                 hardwareSampler = sampler,
                 debug = debug,
+                attachmentQueue = attachmentQueue,
+                attachmentConsumer = attachmentConsumer,
+                maxAttachmentsPerInference = maxAttachmentsPerInference,
+                maxAttachmentSizeBytes = maxAttachmentSizeBytes,
+                attachmentFilter = attachmentFilter,
             )
 
             if (autoTrackMemoryWarnings) {
@@ -331,6 +414,34 @@ class WildEdge internal constructor(
                 ?: error("DSN must include project secret: https://<secret>@ingest.wildedge.dev/<key>")
             val host = "${uri.scheme}://${uri.host}${if (uri.port > 0) ":${uri.port}" else ""}"
             return secret to host
+        }
+
+        private fun buildAttachmentPipeline(
+            host: String,
+            secret: String,
+            filesDir: File,
+        ): Pair<AttachmentQueue?, AttachmentConsumer?> {
+            if (!enableAttachments) return null to null
+
+            val attachmentQueue = AttachmentQueue(
+                file = attachmentStoreFile ?: File(filesDir, "wildedge/attachments.blob"),
+                strategy = attachmentStorageStrategy,
+            )
+            val attachmentTransmitter = AttachmentTransmitter(
+                host = host,
+                apiKey = secret,
+                timeoutMs = attachmentTransmitTimeoutMs,
+                log = { msg -> if (debug) Log.d("wildedge", msg) },
+            )
+            val attachmentConsumer = AttachmentConsumer(
+                queue = attachmentQueue,
+                transmitter = attachmentTransmitter,
+                flushIntervalMs = attachmentFlushIntervalMs,
+                maxAttachmentAgeMs = maxAttachmentAgeMs,
+                log = { msg -> if (debug) Log.d("wildedge", msg) },
+            ).also { it.start() }
+
+            return attachmentQueue to attachmentConsumer
         }
     }
 

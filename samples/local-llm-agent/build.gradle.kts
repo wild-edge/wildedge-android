@@ -50,7 +50,8 @@ kotlin {
 }
 
 dependencies {
-    implementation(project(":wildedge"))
+//    implementation(project(":wildedge"))
+    implementation("dev.wildedge:wildedge-android:1.0.0")
     implementation(libs.litertlm)
     implementation(libs.appcompat)
     implementation(libs.lifecycle.runtime.ktx)

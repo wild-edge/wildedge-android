@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Upload image size"
+        android:textStyle="bold" />
+
+    <Spinner
+        android:id="@+id/imageSizeSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/compressionLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:textStyle="bold" />
+
+    <SeekBar
+        android:id="@+id/compressionSeekBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="18"
+        android:min="0" />
+
+    <TextView
+        android:id="@+id/estimateText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textColor="#666666" />
+
+</LinearLayout>

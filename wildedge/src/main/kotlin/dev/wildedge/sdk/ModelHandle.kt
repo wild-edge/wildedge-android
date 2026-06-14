@@ -15,6 +15,11 @@ class ModelHandle internal constructor(
     private val publish: (MutableMap<String, Any?>) -> Unit,
     private val hardwareSnapshot: () -> HardwareContext?,
     private val activeSpanContext: () -> SpanContext? = { null },
+    private val enqueueAttachments: (
+        inferenceId: String,
+        inferenceTimestamp: String,
+        attachments: List<InferenceAttachment>,
+    ) -> Unit = { _, _, _ -> },
 ) : AutoCloseable {
 
     private var loadedAt: Long = 0L
@@ -113,6 +118,7 @@ class ModelHandle internal constructor(
         parentSpanId: String? = null,
         runId: String? = null,
         agentId: String? = null,
+        attachments: List<InferenceAttachment> = emptyList(),
     ): String {
         val activeCtx = activeSpanContext()
         val rawHw = hardware ?: hardwareSnapshot()
@@ -136,10 +142,14 @@ class ModelHandle internal constructor(
             parentSpanId = parentSpanId ?: activeCtx?.spanId,
             runId = runId,
             agentId = agentId,
+            attachmentRefs = attachments,
         )
         val inferenceId = event["__we_inference_id"] as String
         lastInferenceId = inferenceId
         publish(event)
+        if (attachments.isNotEmpty()) {
+            enqueueAttachments(inferenceId, event["timestamp"] as String, attachments)
+        }
         return inferenceId
     }
 

@@ -1,6 +1,7 @@
 package dev.wildedge.sdk.events
 
 import dev.wildedge.sdk.Config
+import dev.wildedge.sdk.InferenceAttachment
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -302,6 +303,7 @@ fun buildInferenceEvent(
     stepIndex: Int? = null,
     conversationId: String? = null,
     attributes: Map<String, Any?>? = null,
+    attachmentRefs: List<InferenceAttachment>? = null,
 ): MutableMap<String, Any?> {
     val inferenceId = newEventId()
     return mutableMapOf(
@@ -330,6 +332,16 @@ fun buildInferenceEvent(
             "success" to success,
             "error_code" to errorCode,
         ).filterValues { it != null },
+        "attachments" to attachmentRefs?.takeIf { it.isNotEmpty() }?.map { ref ->
+            mapOf(
+                "attachment_id" to ref.attachmentId,
+                "role" to if (ref.role == InferenceAttachment.Role.Output) "output" else "input",
+                "content_type" to when (val payload = ref.payload) {
+                    is InferenceAttachment.Payload.Data -> payload.mimeType
+                    is InferenceAttachment.Payload.File -> payload.mimeType
+                },
+            )
+        },
         "__we_inference_id" to inferenceId,
     ).also { it.values.removeAll { v -> v == null } }
 }

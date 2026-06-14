@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black">
+
+    <androidx.camera.view.PreviewView
+        android:id="@+id/cameraPreview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:implementationMode="compatible" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:elevation="8dp"
+        android:paddingHorizontal="16dp"
+        android:orientation="vertical">
+
+        <RadioGroup
+            android:id="@+id/providerGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/provider_group_background"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:padding="3dp">
+
+            <RadioButton
+                android:id="@+id/radioOpenRouter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/radio_segment_background"
+                android:button="@null"
+                android:checked="true"
+                android:drawableStart="@drawable/ic_provider_network"
+                android:drawablePadding="6dp"
+                android:drawableTint="@color/radio_segment_text"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="14dp"
+                android:paddingVertical="7dp"
+                android:text="OpenRouter"
+                android:textColor="@color/radio_segment_text" />
+
+            <RadioButton
+                android:id="@+id/radioGemini"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:background="@drawable/radio_segment_background"
+                android:button="@null"
+                android:drawableStart="@drawable/ic_provider_sparkles"
+                android:drawablePadding="6dp"
+                android:drawableTint="@color/radio_segment_text"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="14dp"
+                android:paddingVertical="7dp"
+                android:text="Gemini"
+                android:textColor="@color/radio_segment_text" />
+
+            <RadioButton
+                android:id="@+id/radioBoth"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:background="@drawable/radio_segment_background"
+                android:button="@null"
+                android:drawableStart="@drawable/ic_provider_both"
+                android:drawablePadding="6dp"
+                android:drawableTint="@color/radio_segment_text"
+                android:gravity="center_vertical"
+                android:paddingHorizontal="14dp"
+                android:paddingVertical="7dp"
+                android:text="Both"
+                android:textColor="@color/radio_segment_text" />
+        </RadioGroup>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/jobsRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@null"
+            android:orientation="horizontal"
+            android:padding="4dp"
+            tools:listitem="@layout/item_scan_job" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <LinearLayout
+            android:id="@+id/bottomBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@null"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="16dp">
+
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <ImageButton
+                    android:id="@+id/settingsButton"
+                    style="?android:attr/borderlessButtonStyle"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="Settings"
+                    android:src="@android:drawable/ic_menu_preferences"
+                    app:tint="@android:color/white" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/scanButton"
+                android:layout_width="76dp"
+                android:layout_height="76dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="@drawable/scan_button_ring">
+
+                <View
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/scan_button_inner" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="Scan"
+                    android:textColor="@android:color/black"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+            </FrameLayout>
+
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <ImageButton
+                    android:id="@+id/galleryButton"
+                    style="?android:attr/borderlessButtonStyle"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="Pick photo"
+                    android:src="@android:drawable/ic_menu_gallery"
+                    app:tint="@android:color/white" />
+            </FrameLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/errorText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:background="#CC2222"
+        android:padding="8dp"
+        android:textColor="@android:color/white"
+        android:visibility="gone" />
+
+</FrameLayout>

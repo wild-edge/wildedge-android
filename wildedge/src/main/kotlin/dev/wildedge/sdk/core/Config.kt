@@ -23,6 +23,13 @@ internal object Config {
 
     const val DEFAULT_ENABLE_COMPRESSION = true
 
+    const val DEFAULT_ENABLE_ATTACHMENTS = false
+    const val DEFAULT_MAX_ATTACHMENTS_PER_INFERENCE = 10
+    const val DEFAULT_MAX_ATTACHMENT_SIZE_BYTES = 10L * 1024 * 1024
+    const val DEFAULT_MAX_ATTACHMENT_AGE_MS = 5 * 60 * 1000L
+    const val DEFAULT_ATTACHMENT_FLUSH_INTERVAL_MS = 5_000L
+    const val ATTACHMENT_HTTP_TIMEOUT_MS = 10_000
+
     const val HTTP_TIMEOUT_MS = 15_000
     const val ERROR_MSG_MAX_LEN = 200
 
