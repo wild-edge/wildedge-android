@@ -22,6 +22,32 @@ enum class RecognitionProvider(val label: String) {
     Both("Both"),
 }
 
+enum class CaptureFilter(val label: String) {
+    LensSmudge("Lens smudge"),
+    Rain("Rain"),
+    Fog("Fog"),
+    LowLight("Low light"),
+    Defocus("Defocus"),
+    ImagePipeline("Image pipeline degradation"),
+}
+
+enum class FilterStrength(val label: String) {
+    Low("Low"),
+    Medium("Medium"),
+    High("High"),
+}
+
+data class FilterIncident(
+    val filter: CaptureFilter,
+    val strength: FilterStrength,
+    val remainingCaptures: Int,
+)
+
+data class AppliedFilter(
+    val filter: CaptureFilter,
+    val strength: FilterStrength,
+)
+
 data class PhotoMetadata(val fileSizeBytes: Int, val width: Int?, val height: Int?) {
     val fileSizeFormatted: String get() = formatBytes(fileSizeBytes)
 }
