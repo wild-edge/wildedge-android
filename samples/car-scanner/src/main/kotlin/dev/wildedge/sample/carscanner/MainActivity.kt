@@ -23,6 +23,7 @@ import dev.wildedge.sample.carscanner.databinding.DialogDetailBinding
 import dev.wildedge.sample.carscanner.databinding.DialogSettingsBinding
 import dev.wildedge.sdk.FeedbackType
 import dev.wildedge.sdk.WildEdge
+import dev.wildedge.sdk.analysis.analyzeImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -38,6 +39,7 @@ class MainActivity : AppCompatActivity() {
 
     private var imageCapture: ImageCapture? = null
     private var provider: RecognitionProvider = RecognitionProvider.OpenRouter
+    private var filterIncident: FilterIncident? = null
 
     private val prefs by lazy { getSharedPreferences("car_scanner_settings", MODE_PRIVATE) }
 
@@ -55,6 +57,13 @@ class MainActivity : AppCompatActivity() {
     private var detailJobId: UUID? = null
     private var detailDialogBinding: DialogDetailBinding? = null
 
+    private data class PreparedUpload(
+        val bytes: ByteArray,
+        val metadata: PhotoMetadata,
+        val thumbnail: Bitmap,
+        val inputMeta: Map<String, Any?>,
+    )
+
     private val requestPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) startCamera() else showError("Camera access denied")
     }
@@ -71,6 +80,7 @@ class MainActivity : AppCompatActivity() {
 
         uploadImageSize = prefs.getInt(PREF_UPLOAD_IMAGE_SIZE, uploadImageSize)
         compressionQuality = prefs.getFloat(PREF_COMPRESSION_QUALITY, compressionQuality)
+        filterIncident = loadFilterIncident()
 
         WildEdge.init(this) {
             dsn = getString(R.string.wildedge_dsn)
@@ -123,6 +133,8 @@ class MainActivity : AppCompatActivity() {
         binding.scanButton.setOnClickListener { scan() }
         binding.settingsButton.setOnClickListener { showSettings() }
         binding.galleryButton.setOnClickListener { pickImage.launch("image/*") }
+        binding.filterStatus.setOnClickListener { showSettings() }
+        updateFilterStatus()
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             startCamera()
@@ -170,7 +182,7 @@ class MainActivity : AppCompatActivity() {
                 override fun onCaptureSuccess(image: androidx.camera.core.ImageProxy) {
                     val bytes = imageProxyToJpeg(image)
                     image.close()
-                    processCapturedImage(job, bytes)
+                    processCapturedImage(job, bytes, source = "camera", appliedFilter = consumeFilterIncident())
                 }
 
                 override fun onError(exception: ImageCaptureException) {
@@ -201,25 +213,31 @@ class MainActivity : AppCompatActivity() {
         val job = ScanJob(provider = provider)
         jobs.add(0, job)
         refreshJobs()
-        processCapturedImage(job, bytes)
+        processCapturedImage(job, bytes, source = "gallery", appliedFilter = consumeFilterIncident())
     }
 
-    private fun processCapturedImage(job: ScanJob, fullImageBytes: ByteArray) {
+    private fun processCapturedImage(
+        job: ScanJob,
+        fullImageBytes: ByteArray,
+        source: String,
+        appliedFilter: AppliedFilter?,
+    ) {
         lifecycleScope.launch {
-            val (uploadData, meta, thumbnail) = withContext(Dispatchers.Default) {
-                val full = BitmapFactory.decodeByteArray(fullImageBytes, 0, fullImageBytes.size)
-                val thumb = makeThumbnail(full, 400)
-                val (data, photoMeta) = makeUploadDataAndMeta(full)
-                Triple(data, photoMeta, thumb)
-            }
-
-            job.imageBytes = uploadData
-            job.thumbnail = thumbnail
-            job.photoMetadata = meta
-            refreshJobs()
-
             try {
-                val results = withContext(Dispatchers.IO) { analyzeImage(uploadData, meta, job.provider) }
+                val prepared = withContext(Dispatchers.Default) {
+                    val full = BitmapFactory.decodeByteArray(fullImageBytes, 0, fullImageBytes.size)
+                        ?: throw ApiException("Cannot decode captured image")
+                    makeUploadDataAndMeta(full, source, appliedFilter, job.id.hashCode())
+                }
+
+                job.imageBytes = prepared.bytes
+                job.thumbnail = prepared.thumbnail
+                job.photoMetadata = prepared.metadata
+                refreshJobs()
+
+                val results = withContext(Dispatchers.IO) {
+                    analyzeImage(prepared.bytes, prepared.metadata, job.provider, prepared.inputMeta, appliedFilter)
+                }
                 updateJob(job.id, ScanJobStatus.Completed(results))
             } catch (e: Exception) {
                 updateJob(job.id, ScanJobStatus.Failed(e.message ?: "Unknown error"))
@@ -234,46 +252,89 @@ class MainActivity : AppCompatActivity() {
         return Bitmap.createScaledBitmap(bitmap, width, height, true)
     }
 
-    private fun makeUploadDataAndMeta(bitmap: Bitmap): Pair<ByteArray, PhotoMetadata> {
+    private fun makeUploadDataAndMeta(
+        bitmap: Bitmap,
+        source: String,
+        appliedFilter: AppliedFilter?,
+        seed: Int,
+    ): PreparedUpload {
         val targetWidth = uploadImageSize.toFloat()
         val scale = if (bitmap.width > targetWidth) targetWidth / bitmap.width else 1f
         val width = (bitmap.width * scale).roundToInt().coerceAtLeast(1)
         val height = (bitmap.height * scale).roundToInt().coerceAtLeast(1)
         val resized = Bitmap.createScaledBitmap(bitmap, width, height, true)
+        val filtered = applyCaptureFilter(resized, appliedFilter, seed)
         val output = ByteArrayOutputStream()
-        resized.compress(Bitmap.CompressFormat.JPEG, (compressionQuality * 100).roundToInt(), output)
+        filtered.compress(Bitmap.CompressFormat.JPEG, (compressionQuality * 100).roundToInt(), output)
         val bytes = output.toByteArray()
-        return bytes to PhotoMetadata(fileSizeBytes = bytes.size, width = width, height = height)
+        val delivered = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            ?: throw ApiException("Cannot decode prepared image")
+        val inputMeta = WildEdge.analyzeImage(delivered).toMap().toMutableMap().apply {
+            put("source", source)
+        }
+        return PreparedUpload(
+            bytes = bytes,
+            metadata = PhotoMetadata(fileSizeBytes = bytes.size, width = delivered.width, height = delivered.height),
+            thumbnail = makeThumbnail(delivered, 400),
+            inputMeta = inputMeta,
+        )
     }
 
-    private fun analyzeImage(uploadData: ByteArray, meta: PhotoMetadata, provider: RecognitionProvider): List<ScanResult> = when (provider) {
-        RecognitionProvider.OpenRouter -> listOf(analyzeWithOpenRouter(uploadData, meta))
-        RecognitionProvider.Gemini -> listOf(analyzeWithGemini(uploadData, meta))
-        RecognitionProvider.Both -> analyzeWithBoth(uploadData, meta)
+    private fun analyzeImage(
+        uploadData: ByteArray,
+        meta: PhotoMetadata,
+        provider: RecognitionProvider,
+        inputMeta: Map<String, Any?>,
+        appliedFilter: AppliedFilter?,
+    ): List<ScanResult> = when (provider) {
+        RecognitionProvider.OpenRouter -> listOf(analyzeWithOpenRouter(uploadData, meta, inputMeta, appliedFilter))
+        RecognitionProvider.Gemini -> listOf(analyzeWithGemini(uploadData, meta, inputMeta, appliedFilter))
+        RecognitionProvider.Both -> analyzeWithBoth(uploadData, meta, inputMeta, appliedFilter)
     }
 
-    private fun analyzeWithOpenRouter(uploadData: ByteArray, meta: PhotoMetadata, runId: String? = null): ScanResult {
-        val result = OpenRouterClient.analyze(uploadData, CAR_PROMPT, runId)
+    private fun analyzeWithOpenRouter(
+        uploadData: ByteArray,
+        meta: PhotoMetadata,
+        inputMeta: Map<String, Any?>,
+        appliedFilter: AppliedFilter?,
+        runId: String? = null,
+    ): ScanResult {
+        val result = OpenRouterClient.analyze(
+            uploadData, recognitionPrompt(appliedFilter), inputMeta, runId, responseDelayMs(appliedFilter),
+        )
         return toScanResult("OpenRouter", result, meta, OpenRouterClient.handle)
     }
 
-    private fun analyzeWithGemini(uploadData: ByteArray, meta: PhotoMetadata, runId: String? = null): ScanResult {
-        val result = GeminiClient.analyze(uploadData, CAR_PROMPT, runId)
+    private fun analyzeWithGemini(
+        uploadData: ByteArray,
+        meta: PhotoMetadata,
+        inputMeta: Map<String, Any?>,
+        appliedFilter: AppliedFilter?,
+        runId: String? = null,
+    ): ScanResult {
+        val result = GeminiClient.analyze(
+            uploadData, recognitionPrompt(appliedFilter), inputMeta, runId, responseDelayMs(appliedFilter),
+        )
         return toScanResult("Gemini", result, meta, GeminiClient.handle)
     }
 
-    private fun analyzeWithBoth(uploadData: ByteArray, meta: PhotoMetadata): List<ScanResult> {
+    private fun analyzeWithBoth(
+        uploadData: ByteArray,
+        meta: PhotoMetadata,
+        inputMeta: Map<String, Any?>,
+        appliedFilter: AppliedFilter?,
+    ): List<ScanResult> {
         val sharedRunId = "both-${UUID.randomUUID()}"
         val results = mutableListOf<ScanResult>()
         var firstError: Exception? = null
 
         try {
-            results.add(analyzeWithOpenRouter(uploadData, meta, sharedRunId))
+            results.add(analyzeWithOpenRouter(uploadData, meta, inputMeta, appliedFilter, sharedRunId))
         } catch (e: Exception) {
             firstError = e
         }
         try {
-            results.add(analyzeWithGemini(uploadData, meta, sharedRunId))
+            results.add(analyzeWithGemini(uploadData, meta, inputMeta, appliedFilter, sharedRunId))
         } catch (e: Exception) {
             if (firstError == null) firstError = e
         }
@@ -352,6 +413,69 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
+        val filters = CaptureFilter.entries
+        val strengths = FilterStrength.entries
+        val selectedFilter = filterIncident?.filter ?: enumPreference(
+            PREF_SELECTED_FILTER,
+            CaptureFilter.LensSmudge,
+            filters,
+        )
+        val selectedStrength = filterIncident?.strength ?: enumPreference(
+            PREF_SELECTED_FILTER_STRENGTH,
+            FilterStrength.Medium,
+            strengths,
+        )
+        dialogBinding.filterSpinner.adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_dropdown_item,
+            filters.map { it.label },
+        )
+        dialogBinding.filterSpinner.setSelection(filters.indexOf(selectedFilter))
+        dialogBinding.filterStrengthSpinner.adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_dropdown_item,
+            strengths.map { it.label },
+        )
+        dialogBinding.filterStrengthSpinner.setSelection(strengths.indexOf(selectedStrength))
+        dialogBinding.captureCountPicker.minValue = 1
+        dialogBinding.captureCountPicker.maxValue = 100
+        dialogBinding.captureCountPicker.wrapSelectorWheel = false
+        dialogBinding.captureCountPicker.value = filterIncident?.remainingCaptures
+            ?: prefs.getInt(PREF_FILTER_CAPTURE_COUNT, DEFAULT_FILTER_CAPTURE_COUNT).coerceIn(1, 100)
+
+        fun updateIncidentLabel() {
+            val incident = filterIncident
+            dialogBinding.activeFilterText.text = if (incident == null) {
+                "No active effect"
+            } else {
+                "${incident.filter.label} · ${incident.strength.label} · ${incident.remainingCaptures} captures left"
+            }
+            dialogBinding.cancelFilterButton.isEnabled = incident != null
+        }
+        updateIncidentLabel()
+
+        dialogBinding.armFilterButton.setOnClickListener {
+            val filter = filters[dialogBinding.filterSpinner.selectedItemPosition]
+            val strength = strengths[dialogBinding.filterStrengthSpinner.selectedItemPosition]
+            val count = dialogBinding.captureCountPicker.value
+            filterIncident = FilterIncident(filter, strength, count)
+            prefs.edit()
+                .putString(PREF_SELECTED_FILTER, filter.name)
+                .putString(PREF_SELECTED_FILTER_STRENGTH, strength.name)
+                .putInt(PREF_FILTER_CAPTURE_COUNT, count)
+                .apply()
+            persistFilterIncident()
+            updateFilterStatus()
+            updateIncidentLabel()
+        }
+
+        dialogBinding.cancelFilterButton.setOnClickListener {
+            filterIncident = null
+            persistFilterIncident()
+            updateFilterStatus()
+            updateIncidentLabel()
+        }
+
         AlertDialog.Builder(this)
             .setTitle("Settings")
             .setView(dialogBinding.root)
@@ -359,6 +483,55 @@ class MainActivity : AppCompatActivity() {
                 uploadImageSize = sizes[dialogBinding.imageSizeSpinner.selectedItemPosition]
             }
             .show()
+    }
+
+    private fun consumeFilterIncident(): AppliedFilter? {
+        val incident = filterIncident ?: return null
+        val applied = AppliedFilter(incident.filter, incident.strength)
+        val remaining = incident.remainingCaptures - 1
+        filterIncident = if (remaining > 0) incident.copy(remainingCaptures = remaining) else null
+        persistFilterIncident()
+        updateFilterStatus()
+        return applied
+    }
+
+    private fun updateFilterStatus() {
+        val incident = filterIncident
+        binding.filterStatus.visibility = if (incident == null) View.GONE else View.VISIBLE
+        if (incident != null) {
+            binding.filterStatus.text = "${incident.filter.label} · ${incident.strength.label} · ${incident.remainingCaptures} left"
+        }
+    }
+
+    private fun loadFilterIncident(): FilterIncident? {
+        val remaining = prefs.getInt(PREF_FILTER_REMAINING, 0)
+        if (remaining <= 0) return null
+        val filter = CaptureFilter.entries.firstOrNull { it.name == prefs.getString(PREF_ACTIVE_FILTER, null) }
+            ?: return null
+        val strength = FilterStrength.entries.firstOrNull {
+            it.name == prefs.getString(PREF_ACTIVE_FILTER_STRENGTH, null)
+        } ?: return null
+        return FilterIncident(filter, strength, remaining)
+    }
+
+    private fun persistFilterIncident() {
+        val editor = prefs.edit()
+        val incident = filterIncident
+        if (incident == null) {
+            editor.remove(PREF_ACTIVE_FILTER)
+                .remove(PREF_ACTIVE_FILTER_STRENGTH)
+                .remove(PREF_FILTER_REMAINING)
+        } else {
+            editor.putString(PREF_ACTIVE_FILTER, incident.filter.name)
+                .putString(PREF_ACTIVE_FILTER_STRENGTH, incident.strength.name)
+                .putInt(PREF_FILTER_REMAINING, incident.remainingCaptures)
+        }
+        editor.apply()
+    }
+
+    private fun <T : Enum<T>> enumPreference(key: String, fallback: T, values: List<T>): T {
+        val stored = prefs.getString(key, null)
+        return values.firstOrNull { it.name == stored } ?: fallback
     }
 
     private fun showDetail(job: ScanJob) {
@@ -634,9 +807,9 @@ class MainActivity : AppCompatActivity() {
         addJsonSection(container, result.rawJson)
         addDivider(container)
 
-        addSectionHeader(container, "HTTP")
+        addSectionHeader(container, "Recognition request")
         addDetailRow(container, "Status", "${result.httpStats.statusCode}")
-        addDetailRow(container, "Duration", "${result.httpStats.durationMs} ms")
+        addDetailRow(container, "Elapsed", "${result.httpStats.durationMs} ms")
         addDetailRow(container, "Response", formatBytes(result.httpStats.responseSize))
     }
 
@@ -646,5 +819,12 @@ class MainActivity : AppCompatActivity() {
     private companion object {
         const val PREF_UPLOAD_IMAGE_SIZE = "upload_image_size"
         const val PREF_COMPRESSION_QUALITY = "compression_quality"
+        const val PREF_SELECTED_FILTER = "selected_filter"
+        const val PREF_SELECTED_FILTER_STRENGTH = "selected_filter_strength"
+        const val PREF_FILTER_CAPTURE_COUNT = "filter_capture_count"
+        const val PREF_ACTIVE_FILTER = "active_filter"
+        const val PREF_ACTIVE_FILTER_STRENGTH = "active_filter_strength"
+        const val PREF_FILTER_REMAINING = "filter_remaining"
+        const val DEFAULT_FILTER_CAPTURE_COUNT = 30
     }
 }
