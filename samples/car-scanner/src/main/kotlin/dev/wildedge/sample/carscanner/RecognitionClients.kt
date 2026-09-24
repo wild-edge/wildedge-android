@@ -41,6 +41,7 @@ object OpenRouterClient {
         prompt: String,
         inputMeta: Map<String, Any?>,
         runId: String? = null,
+        responseDelayMs: Long = 0L,
     ): AnalysisResult {
         val apiKey = BuildConfig.OPENROUTER_API_KEY.trim()
         if (apiKey.isEmpty()) throw ApiException("Set openrouter.api.key in local.properties")
@@ -75,6 +76,7 @@ object OpenRouterClient {
         }
 
         val start = System.currentTimeMillis()
+        if (responseDelayMs > 0) Thread.sleep(responseDelayMs)
         val connection = (URL("https://openrouter.ai/api/v1/chat/completions").openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
             setRequestProperty("Authorization", "Bearer $apiKey")
@@ -162,6 +164,7 @@ object GeminiClient {
         prompt: String,
         inputMeta: Map<String, Any?>,
         runId: String? = null,
+        responseDelayMs: Long = 0L,
     ): AnalysisResult {
         val apiKey = BuildConfig.GEMINI_API_KEY.trim()
         if (apiKey.isEmpty()) throw ApiException("Set google.ai.api.key in local.properties")
@@ -189,6 +192,7 @@ object GeminiClient {
         }
 
         val start = System.currentTimeMillis()
+        if (responseDelayMs > 0) Thread.sleep(responseDelayMs)
         val url = "https://generativelanguage.googleapis.com/v1beta/models/$MODEL_NAME:generateContent?key=$apiKey"
         val requestBytes = body.toString().toByteArray()
         var statusCode = 0

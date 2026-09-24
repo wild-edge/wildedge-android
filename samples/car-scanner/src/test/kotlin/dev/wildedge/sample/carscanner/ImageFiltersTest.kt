@@ -17,7 +17,9 @@ class ImageFiltersTest {
     fun everyFilterPreservesDimensionsAndChangesImage() {
         val source = checkerboard(80, 60)
 
-        for (filter in CaptureFilter.entries) {
+        for (filter in CaptureFilter.entries.filterNot {
+            it == CaptureFilter.SlowResponse || it == CaptureFilter.HighInputTokens
+        }) {
             val result = applyCaptureFilter(
                 source,
                 AppliedFilter(filter, FilterStrength.High),
@@ -47,6 +49,35 @@ class ImageFiltersTest {
         val source = checkerboard(20, 20)
 
         assertEquals(source, applyCaptureFilter(source, null, seed = 1))
+    }
+
+    @Test
+    fun performanceEffectsLeaveImageUnchanged() {
+        val source = checkerboard(20, 20)
+        for (filter in listOf(CaptureFilter.SlowResponse, CaptureFilter.HighInputTokens)) {
+            assertEquals(source, applyCaptureFilter(source, AppliedFilter(filter, FilterStrength.High), seed = 1))
+        }
+    }
+
+    @Test
+    fun responseDelayIsOnlyAppliedForSlowResponse() {
+        assertEquals(0L, responseDelayMs(null))
+        assertEquals(500L, responseDelayMs(AppliedFilter(CaptureFilter.SlowResponse, FilterStrength.Low)))
+        assertEquals(1_500L, responseDelayMs(AppliedFilter(CaptureFilter.SlowResponse, FilterStrength.Medium)))
+        assertEquals(3_000L, responseDelayMs(AppliedFilter(CaptureFilter.SlowResponse, FilterStrength.High)))
+        assertEquals(0L, responseDelayMs(AppliedFilter(CaptureFilter.Fog, FilterStrength.High)))
+    }
+
+    @Test
+    fun inputTokenEffectAddsProgressivelyMorePromptContext() {
+        val low = recognitionPrompt(AppliedFilter(CaptureFilter.HighInputTokens, FilterStrength.Low))
+        val medium = recognitionPrompt(AppliedFilter(CaptureFilter.HighInputTokens, FilterStrength.Medium))
+        val high = recognitionPrompt(AppliedFilter(CaptureFilter.HighInputTokens, FilterStrength.High))
+        assertEquals(CAR_PROMPT, recognitionPrompt(null))
+        assertTrue(low.length > CAR_PROMPT.length)
+        assertTrue(medium.length > low.length)
+        assertTrue(high.length > medium.length)
+        assertTrue(high.contains("Keep the JSON output schema"))
     }
 
     @Test

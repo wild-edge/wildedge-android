@@ -17,6 +17,7 @@ fun applyCaptureFilter(source: Bitmap, applied: AppliedFilter?, seed: Int): Bitm
         CaptureFilter.LowLight -> applyLowLight(source, applied.strength, seed)
         CaptureFilter.Defocus -> applyDefocus(source, applied.strength)
         CaptureFilter.ImagePipeline -> applyImagePipelineDegradation(source, applied.strength)
+        CaptureFilter.SlowResponse, CaptureFilter.HighInputTokens -> source
     }
 }
 

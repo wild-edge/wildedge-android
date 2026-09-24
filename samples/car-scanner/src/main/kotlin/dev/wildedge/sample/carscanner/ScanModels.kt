@@ -29,6 +29,8 @@ enum class CaptureFilter(val label: String) {
     LowLight("Low light"),
     Defocus("Defocus"),
     ImagePipeline("Image pipeline degradation"),
+    SlowResponse("Slow response"),
+    HighInputTokens("Higher input-token usage"),
 }
 
 enum class FilterStrength(val label: String) {
@@ -47,6 +49,31 @@ data class AppliedFilter(
     val filter: CaptureFilter,
     val strength: FilterStrength,
 )
+
+fun responseDelayMs(applied: AppliedFilter?): Long = when {
+    applied?.filter != CaptureFilter.SlowResponse -> 0L
+    applied.strength == FilterStrength.Low -> 500L
+    applied.strength == FilterStrength.Medium -> 1_500L
+    else -> 3_000L
+}
+
+private val EXTRA_PROMPT_CONTEXT = listOf(
+    """Use a consistent visual inspection sequence before selecting a vehicle candidate. Inspect the front and rear light shapes, grille proportions, roofline, wheelbase, door count, window outline, and visible badging. Distinguish the manufacturer from the specific model and generation. If a feature is obscured, rely on the remaining visible features rather than assuming it is present. Do not use the surrounding location as evidence for the brand or model.""",
+    """When several similar vehicles are plausible, compare their distinguishing body details. Separate sedans from hatchbacks and crossovers using ride height and rear profile. Check whether trim, model year, or a regional variant could explain apparent differences. Treat aftermarket wheels, paint, lighting, and camera perspective as weak evidence. Keep confidence calibrated to the image rather than to how common a vehicle is.""",
+    """Review the visible vehicle as a whole before finalizing the ranked candidates. Check whether reflections, partial occlusion, blur, weather, or compression could make one model resemble another. If multiple cars appear, focus on the clearest car and use its bounding box. Prefer a broader year estimate when generation details are not visible. Do not invent a badge or trim designation that cannot be supported by the image.""",
+)
+
+fun recognitionPrompt(applied: AppliedFilter?): String {
+    if (applied?.filter != CaptureFilter.HighInputTokens) return CAR_PROMPT
+    val blocks = when (applied.strength) {
+        FilterStrength.Low -> 1
+        FilterStrength.Medium -> 2
+        FilterStrength.High -> 3
+    }
+    return CAR_PROMPT + "\nAdditional vehicle-identification guidance:\n" +
+        EXTRA_PROMPT_CONTEXT.take(blocks).joinToString("\n") +
+        "\nKeep the JSON output schema and candidate count specified above."
+}
 
 data class PhotoMetadata(val fileSizeBytes: Int, val width: Int?, val height: Int?) {
     val fileSizeFormatted: String get() = formatBytes(fileSizeBytes)

@@ -236,7 +236,7 @@ class MainActivity : AppCompatActivity() {
                 refreshJobs()
 
                 val results = withContext(Dispatchers.IO) {
-                    analyzeImage(prepared.bytes, prepared.metadata, job.provider, prepared.inputMeta)
+                    analyzeImage(prepared.bytes, prepared.metadata, job.provider, prepared.inputMeta, appliedFilter)
                 }
                 updateJob(job.id, ScanJobStatus.Completed(results))
             } catch (e: Exception) {
@@ -285,19 +285,23 @@ class MainActivity : AppCompatActivity() {
         meta: PhotoMetadata,
         provider: RecognitionProvider,
         inputMeta: Map<String, Any?>,
+        appliedFilter: AppliedFilter?,
     ): List<ScanResult> = when (provider) {
-        RecognitionProvider.OpenRouter -> listOf(analyzeWithOpenRouter(uploadData, meta, inputMeta = inputMeta))
-        RecognitionProvider.Gemini -> listOf(analyzeWithGemini(uploadData, meta, inputMeta = inputMeta))
-        RecognitionProvider.Both -> analyzeWithBoth(uploadData, meta, inputMeta)
+        RecognitionProvider.OpenRouter -> listOf(analyzeWithOpenRouter(uploadData, meta, inputMeta, appliedFilter))
+        RecognitionProvider.Gemini -> listOf(analyzeWithGemini(uploadData, meta, inputMeta, appliedFilter))
+        RecognitionProvider.Both -> analyzeWithBoth(uploadData, meta, inputMeta, appliedFilter)
     }
 
     private fun analyzeWithOpenRouter(
         uploadData: ByteArray,
         meta: PhotoMetadata,
         inputMeta: Map<String, Any?>,
+        appliedFilter: AppliedFilter?,
         runId: String? = null,
     ): ScanResult {
-        val result = OpenRouterClient.analyze(uploadData, CAR_PROMPT, inputMeta, runId)
+        val result = OpenRouterClient.analyze(
+            uploadData, recognitionPrompt(appliedFilter), inputMeta, runId, responseDelayMs(appliedFilter),
+        )
         return toScanResult("OpenRouter", result, meta, OpenRouterClient.handle)
     }
 
@@ -305,9 +309,12 @@ class MainActivity : AppCompatActivity() {
         uploadData: ByteArray,
         meta: PhotoMetadata,
         inputMeta: Map<String, Any?>,
+        appliedFilter: AppliedFilter?,
         runId: String? = null,
     ): ScanResult {
-        val result = GeminiClient.analyze(uploadData, CAR_PROMPT, inputMeta, runId)
+        val result = GeminiClient.analyze(
+            uploadData, recognitionPrompt(appliedFilter), inputMeta, runId, responseDelayMs(appliedFilter),
+        )
         return toScanResult("Gemini", result, meta, GeminiClient.handle)
     }
 
@@ -315,18 +322,19 @@ class MainActivity : AppCompatActivity() {
         uploadData: ByteArray,
         meta: PhotoMetadata,
         inputMeta: Map<String, Any?>,
+        appliedFilter: AppliedFilter?,
     ): List<ScanResult> {
         val sharedRunId = "both-${UUID.randomUUID()}"
         val results = mutableListOf<ScanResult>()
         var firstError: Exception? = null
 
         try {
-            results.add(analyzeWithOpenRouter(uploadData, meta, inputMeta, sharedRunId))
+            results.add(analyzeWithOpenRouter(uploadData, meta, inputMeta, appliedFilter, sharedRunId))
         } catch (e: Exception) {
             firstError = e
         }
         try {
-            results.add(analyzeWithGemini(uploadData, meta, inputMeta, sharedRunId))
+            results.add(analyzeWithGemini(uploadData, meta, inputMeta, appliedFilter, sharedRunId))
         } catch (e: Exception) {
             if (firstError == null) firstError = e
         }
@@ -438,7 +446,7 @@ class MainActivity : AppCompatActivity() {
         fun updateIncidentLabel() {
             val incident = filterIncident
             dialogBinding.activeFilterText.text = if (incident == null) {
-                "No active filter"
+                "No active effect"
             } else {
                 "${incident.filter.label} · ${incident.strength.label} · ${incident.remainingCaptures} captures left"
             }
@@ -799,9 +807,9 @@ class MainActivity : AppCompatActivity() {
         addJsonSection(container, result.rawJson)
         addDivider(container)
 
-        addSectionHeader(container, "HTTP")
+        addSectionHeader(container, "Recognition request")
         addDetailRow(container, "Status", "${result.httpStats.statusCode}")
-        addDetailRow(container, "Duration", "${result.httpStats.durationMs} ms")
+        addDetailRow(container, "Elapsed", "${result.httpStats.durationMs} ms")
         addDetailRow(container, "Response", formatBytes(result.httpStats.responseSize))
     }
 
