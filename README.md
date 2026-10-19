@@ -7,14 +7,15 @@
 [![CI](https://github.com/wild-edge/wildedge-android/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/wild-edge/wildedge-android/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Min SDK](https://img.shields.io/badge/minSdk-24-brightgreen.svg)](https://developer.android.com/about/versions/nougat)
+[![Maven Central](https://img.shields.io/maven-central/v/dev.wildedge/wildedge-android)](https://central.sonatype.com/artifact/dev.wildedge/wildedge-android)
 
 On-device ML inference monitoring for Android. Tracks latency, confidence, drift, and hardware metrics without ever sending raw inputs.
 
-> **Pre-release:** API is unstable until v1.0.
+**[Get a DSN](https://app.wildedge.dev)** · [Website](https://wildedge.dev) · [Docs](https://docs.wildedge.dev) · [Blog](https://blog.wildedge.dev)
 
 ## Quick start
 
-Add your DSN to `AndroidManifest.xml`:
+Sign up at [app.wildedge.dev](https://app.wildedge.dev), create a project and copy its DSN. Add it to `AndroidManifest.xml`:
 
 ```xml
 <application ...>
@@ -42,11 +43,9 @@ No DSN? The client runs in noop mode: all calls work, events are discarded. Safe
 
 ## Install
 
-> Not yet published. Watch [Releases](https://github.com/wild-edge/wildedge-android/releases) for the first published version.
-
 ```kotlin
 dependencies {
-    implementation("dev.wildedge:wildedge-android:0.2.0")
+    implementation("dev.wildedge:wildedge-android:1.1.0")
 }
 ```
 
@@ -54,7 +53,7 @@ With a version catalog (`gradle/libs.versions.toml`):
 
 ```toml
 [versions]
-wildedge = "0.2.0"
+wildedge = "1.1.0"
 
 [libraries]
 wildedge = { group = "dev.wildedge", name = "wildedge-android", version.ref = "wildedge" }
