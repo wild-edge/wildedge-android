@@ -11,9 +11,11 @@
 
 On-device ML inference monitoring for Android. Tracks latency, confidence, drift, and hardware metrics without ever sending raw inputs.
 
+**[Get a DSN](https://app.wildedge.dev)** · [Website](https://wildedge.dev) · [Docs](https://docs.wildedge.dev) · [Blog](https://blog.wildedge.dev)
+
 ## Quick start
 
-Add your DSN to `AndroidManifest.xml`:
+Sign up at [app.wildedge.dev](https://app.wildedge.dev), create a project and copy its DSN. Add it to `AndroidManifest.xml`:
 
 ```xml
 <application ...>
