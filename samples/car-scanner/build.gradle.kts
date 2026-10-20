@@ -32,6 +32,13 @@ android {
         viewBinding = true
     }
 
+    buildTypes {
+        debug {
+            applicationIdSuffix = ".local"
+            versionNameSuffix = "-local"
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -54,4 +61,6 @@ dependencies {
     implementation(libs.camerax.lifecycle)
     implementation(libs.camerax.view)
     implementation(libs.recyclerview)
+    testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
 }
